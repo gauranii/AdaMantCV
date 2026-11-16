@@ -17,7 +17,7 @@ import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from figure_compare import _bars, _fit, bars_vs_bars, labels, marks, tiles_vs_tiles  # noqa: E402
+from figure_compare import _bars, _fit, _tiles, bars_vs_bars, labels, marks, tiles_vs_tiles  # noqa: E402
 
 published, redrawn, repo = sys.argv[1:4]
 rows = []
@@ -85,7 +85,8 @@ for fig, pub, panel in [('Fig 1A', 'LiverToxicitySubset1', 'A'), ('Fig 1B', 'Liv
 for pdf in sorted(glob.glob(os.path.join(repo, 'figures', 'fig[78]_*.pdf'))):
     name = os.path.basename(pdf)[:-4]
     kind, k = name.split('_')[1], name.split('_')[2]
-    power = glob.glob(os.path.join(repo, 'results', f'power_eeg{k}_runs*.csv'))
+    power = sorted(glob.glob(os.path.join(repo, 'results', f'power_eeg{k}_runs*.csv')),
+                   key=lambda f: int(f.split('_runs')[1].split('_')[0]), reverse=True)
     gcv = glob.glob(os.path.join(repo, 'results', f'gcv_eeg{k}_grid500x2000.csv'))
     if not power or not gcv:
         continue
@@ -102,6 +103,25 @@ for pdf in sorted(glob.glob(os.path.join(repo, 'figures', 'fig[78]_*.pdf'))):
     report(name, 'points vs rebuilt table, largest offset (pt)',
            f'{len(pts)}, {max(rx, ry):.3f}' if rx is not None else f'{len(pts)}/{len(xs)}',
            rx is not None and max(rx, ry) < 0.05)
+
+# ----- Part C: heat maps of the rebuilt runs against the published files -----
+# Tiles are drawn row by row; the lambda = 0 column (position 49 for the liver
+# grid, 499 for the EEG grid) depends on rounding (README, note 1). When that
+# value is the smallest or largest of the panel it also moves the colour range,
+# and then every tile shifts colour: this part is reported, not judged.
+for fig, pub, new in HEAT:
+    b = os.path.join(repo, 'figures', new + '.pdf')
+    if not os.path.exists(b):
+        continue
+    ta, tb = _tiles(os.path.join(published, pub + '.pdf')), _tiles(b)
+    if len(ta) != len(tb):
+        report(fig, 'rebuilt run: tiles', f'{len(ta)}/{len(tb)}', False)
+        continue
+    width = 300 if len(ta) == 3000 else 2500
+    off = [i for i, (x, y) in enumerate(zip(ta, tb)) if x[4] != y[4]]
+    columns = sorted({i % width for i in off})
+    report(fig, 'rebuilt run vs published: tiles that differ (report only)',
+           f'{len(off)} of {len(ta)}', True)
 
 os.makedirs(os.path.join(repo, 'results', 'checks'), exist_ok=True)
 with open(os.path.join(repo, 'results', 'checks', 'figures.csv'), 'w', newline='') as f:

@@ -111,9 +111,11 @@ if f3:
                f'{mg:.3f} ({g}), {ml:.3f} ({l})', True)
 
 # ----- Tables 1 to 3: rebuilt replications vs archived per-run p-values -----
-# The simulated X comes from MASS::mvrnorm, whose eigenvectors are not unique
-# for the compound symmetric covariance (p - 1 equal eigenvalues), so the CS
-# designs depend on the LAPACK build; the diagonal (heteroskedastic) ones do not.
+# The simulated X comes from MASS::mvrnorm, whose eigenvectors depend on the
+# LAPACK build: for the compound symmetric covariance (p - 1 equal eigenvalues)
+# they can rotate, for the diagonal (heteroskedastic) one only their signs can
+# flip. Sign flips of columns of X leave U and d unchanged, so Table 1 (beta = 0)
+# repeats exactly for the heteroskedastic rows; Tables 2 and 3 need X itself.
 for name, prefix in [('table1_type1_error', 'T1'), ('table2_power_fixed', 'P'), ('table3_power_random', 'P')]:
     files = glob.glob(os.path.join(res, f'{name}_perms1000_grid50x200', '*.csv'))
     if not files:
@@ -132,7 +134,7 @@ for name, prefix in [('table1_type1_error', 'T1'), ('table2_power_fixed', 'P'), 
         t[2].add(run)
     for cov, (same, total, runs) in sorted(tally.items()):
         report(name.split('_')[0].title(), f'{cov} rows: rebuilt per-run p-values = archive (runs {min(runs)}-{max(runs)})',
-               f'{same}/{total}', same == total if cov == 'Het' else True)
+               f'{same}/{total}', same == total if (cov == 'Het' and prefix == 'T1') else True)
 
 os.makedirs(os.path.join(res, 'checks'), exist_ok=True)
 with open(os.path.join(res, 'checks', 'results.csv'), 'w', newline='') as f:

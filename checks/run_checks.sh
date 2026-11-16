@@ -13,6 +13,7 @@
 #          ADAMANT_ORIGINAL (original scripts) enables check 2 (slow, ~1 hour).
 # -----------------------------------------------------------------------------
 set -euo pipefail
+python=${PYTHON:-python3}  # a Python 3 interpreter (standard library only)
 repo=$(pwd)
 out=results/checks
 mkdir -p "$out"
@@ -26,13 +27,13 @@ fi
 # Redraw the figures from the archived run outputs in a scratch copy
 redraw=$(mktemp -d)
 cp -R R scripts reference "$redraw"/
-python3 checks/archive_to_cache.py "$ADAMANT_ARCHIVE" "$redraw/results"
+"$python" checks/archive_to_cache.py "$ADAMANT_ARCHIVE" "$redraw/results"
 for s in fig2_liver_heat fig3_lambda_hist fig5_eeg_heat fig6_eeg_heat \
          fig7_power_gcv_decreasing fig8_power_gcv_increasing; do
   (cd "$redraw" && Rscript "scripts/$s.R" --cores=1 > /dev/null)
 done
-python3 checks/check_figures.py "$ADAMANT_PUBLISHED" "$redraw/figures" "$repo" | tee "$out/figures.txt"
+"$python" checks/check_figures.py "$ADAMANT_PUBLISHED" "$redraw/figures" "$repo" | tee "$out/figures.txt"
 rm -rf "$redraw"
 
-python3 checks/check_results.py "$ADAMANT_ARCHIVE" "$repo" ${ADAMANT_ORIGINAL_RERUN:-} | tee "$out/results.txt"
-python3 checks/write_results.py "$out" > checks/RESULTS.md
+"$python" checks/check_results.py "$ADAMANT_ARCHIVE" "$repo" ${ADAMANT_ORIGINAL_RERUN:-} | tee "$out/results.txt"
+"$python" checks/write_results.py "$out" > checks/RESULTS.md

@@ -64,23 +64,23 @@ options in its header. The defaults are the settings of the paper (seed 8891,
 | Figure 1 | `fig1_liver_cv.R` | as published | 1.2 min |
 | Figure 2 | `fig2_liver_heat.R` | 1000 runs, 50 + 250 penalties | 6.3 min, 3 cores |
 | Figure 3 | `fig3_lambda_hist.R` | replication 500, 50 + 200 penalties | 2.0 min, 6 cores |
-| Figure 5 | `fig5_eeg_heat.R` | 1000 runs, 500 + 2000 penalties | not run in full |
-| Figure 6 | `fig6_eeg_heat.R` | same | not run in full |
-| Figure 7 | `fig7_power_gcv_decreasing.R` | same | not run in full |
-| Figure 8 | `fig8_power_gcv_increasing.R` | same | not run in full |
-| Table 1 | `table1_type1_error.R` | 500 runs x 12 settings | runs 1 to 5: 16 min, 5 cores |
-| Table 2 | `table2_power_fixed.R` | same | runs 1 to 5 only |
-| Table 3 | `table3_power_random.R` | same | runs 1 to 5 only |
+| Figure 5 | `fig5_eeg_heat.R` | 1000 runs, 500 + 2000 penalties | 26 min, 6 cores |
+| Figure 6 | `fig6_eeg_heat.R` | same | 37 min, 6 cores |
+| Figure 7 | `fig7_power_gcv_decreasing.R` | same | 10 min, 6 cores |
+| Figure 8 | `fig8_power_gcv_increasing.R` | same | 6 min, 6 cores |
+| Table 1 | `table1_type1_error.R` | 500 runs x 12 settings | runs 1 to 10 only (about 30 min per 5 runs) |
+| Table 2 | `table2_power_fixed.R` | same | runs 1 to 10 only |
+| Table 3 | `table3_power_random.R` | same | runs 1 to 10 only |
 | Table 4 | `table4_eeg_pvalues.R` | 5 triples | 1.4 min, 5 cores |
 
-The machine used for these times was heavily loaded. At these rates a full
-run of one of Tables 1 to 3 (6000 tests) takes more than a day, and the full
-EEG power curves (26 triples, 1000 runs each) take several days. The
-simulation scripts write one file per replication and skip the ones already
-written, so a full run can be split, for example
-`Rscript scripts/table1_type1_error.R --runs=1:100 --cores=8`. The EEG curves
-are cached in `results/` and shared by Figures 5 to 8; `--runs=10` gives a
-quick, noisy version.
+The machine used for these times was shared with other jobs. The EEG power
+curves take about 3 to 4 minutes per triple and are cached in `results/`, so
+Figures 5 to 8 share the work (times above count only new triples). At the
+rates seen here a full run of one of Tables 1 to 3 (6000 tests) takes more
+than a day, so only replications 1 to 10 were run. The simulation scripts
+write one file per replication and skip the ones already written, so a full
+run can be split, for example
+`Rscript scripts/table1_type1_error.R --runs=1:100 --cores=8`.
 
 ## Checks
 
@@ -108,16 +108,21 @@ writes `checks/RESULTS.md`. It checks four things.
   fixes a seed.
 - **Figure 2, recomputed in full**: equal to the archived run to about 1e-13,
   except at lambda = 0 (note 1).
-- **Figures 5 to 8, recomputed**: the GCV and LOOCV curves equal the archive
-  (largest relative difference about 1e-7, at penalties where the scores reach
-  about 1e10). The power curves were run with far fewer runs than the paper.
+- **Figures 5 to 8, recomputed in full** (26 triples, 1000 runs each): the
+  power curves equal the archived runs to about 1e-14, except at lambda = 0
+  (note 1); the GCV and LOOCV curves equal the archive (largest relative
+  difference about 1e-7, at penalties where the scores reach about 1e10).
+  Because the lambda = 0 value can set the end of the colour range, the
+  recomputed heat maps can differ in colour from the published ones even where
+  the numbers agree.
 - **Table 4, recomputed in full**: the rebuilt code gives exactly what the
   original code gives on this machine, and the penalties chosen for every
   permutation equal the archive, but the p-values differ from the paper
   (note 1).
 - **Tables 1 to 3 and Figure 3, recomputed**: only the heteroskedastic
-  settings can be repeated exactly here (note 2), and only a few replications
-  were run.
+  settings of Table 1 repeat exactly here (note 2), and only replications 1 to
+  10 of 500 were run. For Figure 3 (compound symmetric design) the mean chosen
+  penalties are close to the values in the paper text but not equal.
 
 Notes, each found by the checks:
 
@@ -135,8 +140,10 @@ Notes, each found by the checks:
 2. **Simulated designs depend on the LAPACK build.** `MASS::mvrnorm` uses an
    eigen decomposition. The compound symmetric covariance has p - 1 equal
    eigenvalues, so its eigenvectors, and the simulated X, differ between
-   builds. The diagonal (heteroskedastic) covariance has distinct eigenvalues,
-   and its replications match the archive exactly.
+   builds. For the diagonal (heteroskedastic) covariance only the signs of the
+   eigenvectors can differ. Sign changes of columns of X do not change the test
+   when beta = 0, and the heteroskedastic replications of Table 1 match the
+   archive exactly; those of Tables 2 and 3 do not, which fits a sign change.
 3. **Rejections at p = 0.05.** The original runs used dplyr 0.8.5, whose
    compiled `percent_rank()` adds the steps one at a time, so a p-value of
    0.050 came out slightly above 0.05 and was not counted. `adamant_cv()`
