@@ -1,0 +1,165 @@
+table,row,covariance,p,tau,band,channels,method,value
+1,1,CS,500,none,,,gcv,0.042
+1,1,CS,500,none,,,loo,0.042
+1,1,CS,500,none,,,ga_gcv,0.036
+1,1,CS,500,none,,,ga_loo,0.036
+1,2,CS,500,Q1,,,gcv,0.030
+1,2,CS,500,Q1,,,loo,0.028
+1,2,CS,500,Q1,,,ga_gcv,0.032
+1,2,CS,500,Q1,,,ga_loo,0.028
+1,3,CS,500,Q2,,,gcv,0.048
+1,3,CS,500,Q2,,,loo,0.050
+1,3,CS,500,Q2,,,ga_gcv,0.052
+1,3,CS,500,Q2,,,ga_loo,0.052
+1,4,CS,1000,none,,,gcv,0.048
+1,4,CS,1000,none,,,loo,0.048
+1,4,CS,1000,none,,,ga_gcv,0.038
+1,4,CS,1000,none,,,ga_loo,0.038
+1,5,CS,1000,Q1,,,gcv,0.044
+1,5,CS,1000,Q1,,,loo,0.044
+1,5,CS,1000,Q1,,,ga_gcv,0.042
+1,5,CS,1000,Q1,,,ga_loo,0.042
+1,6,CS,1000,Q2,,,gcv,0.036
+1,6,CS,1000,Q2,,,loo,0.036
+1,6,CS,1000,Q2,,,ga_gcv,0.036
+1,6,CS,1000,Q2,,,ga_loo,0.036
+1,7,Het,500,none,,,gcv,0.038
+1,7,Het,500,none,,,loo,0.038
+1,7,Het,500,none,,,ga_gcv,0.038
+1,7,Het,500,none,,,ga_loo,0.038
+1,8,Het,500,Q1,,,gcv,0.026
+1,8,Het,500,Q1,,,loo,0.026
+1,8,Het,500,Q1,,,ga_gcv,0.028
+1,8,Het,500,Q1,,,ga_loo,0.028
+1,9,Het,500,Q2,,,gcv,0.046
+1,9,Het,500,Q2,,,loo,0.046
+1,9,Het,500,Q2,,,ga_gcv,0.050
+1,9,Het,500,Q2,,,ga_loo,0.050
+1,10,Het,1000,none,,,gcv,0.050
+1,10,Het,1000,none,,,loo,0.050
+1,10,Het,1000,none,,,ga_gcv,0.040
+1,10,Het,1000,none,,,ga_loo,0.040
+1,11,Het,1000,Q1,,,gcv,0.046
+1,11,Het,1000,Q1,,,loo,0.046
+1,11,Het,1000,Q1,,,ga_gcv,0.046
+1,11,Het,1000,Q1,,,ga_loo,0.046
+1,12,Het,1000,Q2,,,gcv,0.040
+1,12,Het,1000,Q2,,,loo,0.040
+1,12,Het,1000,Q2,,,ga_gcv,0.038
+1,12,Het,1000,Q2,,,ga_loo,0.038
+2,1,CS,500,none,,,gcv,0.062
+2,1,CS,500,none,,,loo,0.062
+2,1,CS,500,none,,,ga_gcv,0.104
+2,1,CS,500,none,,,ga_loo,0.104
+2,2,CS,500,Q1,,,gcv,0.342
+2,2,CS,500,Q1,,,loo,0.290
+2,2,CS,500,Q1,,,ga_gcv,0.378
+2,2,CS,500,Q1,,,ga_loo,0.326
+2,3,CS,500,Q2,,,gcv,0.348
+2,3,CS,500,Q2,,,loo,0.288
+2,3,CS,500,Q2,,,ga_gcv,0.382
+2,3,CS,500,Q2,,,ga_loo,0.324
+2,4,CS,1000,none,,,gcv,0.998
+2,4,CS,1000,none,,,loo,0.998
+2,4,CS,1000,none,,,ga_gcv,0.998
+2,4,CS,1000,none,,,ga_loo,0.998
+2,5,CS,1000,Q1,,,gcv,1.000
+2,5,CS,1000,Q1,,,loo,1.000
+2,5,CS,1000,Q1,,,ga_gcv,1.000
+2,5,CS,1000,Q1,,,ga_loo,1.000
+2,6,CS,1000,Q2,,,gcv,1.000
+2,6,CS,1000,Q2,,,loo,1.000
+2,6,CS,1000,Q2,,,ga_gcv,1.000
+2,6,CS,1000,Q2,,,ga_loo,1.000
+2,7,Het,500,none,,,gcv,0.064
+2,7,Het,500,none,,,loo,0.064
+2,7,Het,500,none,,,ga_gcv,0.178
+2,7,Het,500,none,,,ga_loo,0.178
+2,8,Het,500,Q1,,,gcv,0.074
+2,8,Het,500,Q1,,,loo,0.072
+2,8,Het,500,Q1,,,ga_gcv,0.186
+2,8,Het,500,Q1,,,ga_loo,0.184
+2,9,Het,500,Q2,,,gcv,0.118
+2,9,Het,500,Q2,,,loo,0.068
+2,9,Het,500,Q2,,,ga_gcv,0.218
+2,9,Het,500,Q2,,,ga_loo,0.180
+2,10,Het,1000,none,,,gcv,0.996
+2,10,Het,1000,none,,,loo,0.996
+2,10,Het,1000,none,,,ga_gcv,0.998
+2,10,Het,1000,none,,,ga_loo,0.998
+2,11,Het,1000,Q1,,,gcv,1.000
+2,11,Het,1000,Q1,,,loo,1.000
+2,11,Het,1000,Q1,,,ga_gcv,1.000
+2,11,Het,1000,Q1,,,ga_loo,1.000
+2,12,Het,1000,Q2,,,gcv,1.000
+2,12,Het,1000,Q2,,,loo,1.000
+2,12,Het,1000,Q2,,,ga_gcv,1.000
+2,12,Het,1000,Q2,,,ga_loo,1.000
+3,1,CS,500,none,,,gcv,0.070
+3,1,CS,500,none,,,loo,0.070
+3,1,CS,500,none,,,ga_gcv,0.112
+3,1,CS,500,none,,,ga_loo,0.112
+3,2,CS,500,Q1,,,gcv,0.196
+3,2,CS,500,Q1,,,loo,0.152
+3,2,CS,500,Q1,,,ga_gcv,0.230
+3,2,CS,500,Q1,,,ga_loo,0.192
+3,3,CS,500,Q2,,,gcv,0.150
+3,3,CS,500,Q2,,,loo,0.136
+3,3,CS,500,Q2,,,ga_gcv,0.188
+3,3,CS,500,Q2,,,ga_loo,0.176
+3,4,CS,1000,none,,,gcv,0.998
+3,4,CS,1000,none,,,loo,0.998
+3,4,CS,1000,none,,,ga_gcv,0.998
+3,4,CS,1000,none,,,ga_loo,0.998
+3,5,CS,1000,Q1,,,gcv,1.000
+3,5,CS,1000,Q1,,,loo,1.000
+3,5,CS,1000,Q1,,,ga_gcv,1.000
+3,5,CS,1000,Q1,,,ga_loo,1.000
+3,6,CS,1000,Q2,,,gcv,1.000
+3,6,CS,1000,Q2,,,loo,1.000
+3,6,CS,1000,Q2,,,ga_gcv,1.000
+3,6,CS,1000,Q2,,,ga_loo,1.000
+3,7,Het,500,none,,,gcv,0.092
+3,7,Het,500,none,,,loo,0.092
+3,7,Het,500,none,,,ga_gcv,0.268
+3,7,Het,500,none,,,ga_loo,0.268
+3,8,Het,500,Q1,,,gcv,0.084
+3,8,Het,500,Q1,,,loo,0.092
+3,8,Het,500,Q1,,,ga_gcv,0.266
+3,8,Het,500,Q1,,,ga_loo,0.268
+3,9,Het,500,Q2,,,gcv,0.088
+3,9,Het,500,Q2,,,loo,0.092
+3,9,Het,500,Q2,,,ga_gcv,0.268
+3,9,Het,500,Q2,,,ga_loo,0.268
+3,10,Het,1000,none,,,gcv,0.996
+3,10,Het,1000,none,,,loo,0.996
+3,10,Het,1000,none,,,ga_gcv,0.996
+3,10,Het,1000,none,,,ga_loo,0.996
+3,11,Het,1000,Q1,,,gcv,1.000
+3,11,Het,1000,Q1,,,loo,1.000
+3,11,Het,1000,Q1,,,ga_gcv,1.000
+3,11,Het,1000,Q1,,,ga_loo,1.000
+3,12,Het,1000,Q2,,,gcv,1.000
+3,12,Het,1000,Q2,,,loo,1.000
+3,12,Het,1000,Q2,,,ga_gcv,1.000
+3,12,Het,1000,Q2,,,ga_loo,1.000
+4,1,,,,Delta,FP1 - T8,gcv,0.016
+4,1,,,,Delta,FP1 - T8,loo,0.015
+4,1,,,,Delta,FP1 - T8,ga_gcv,0.012
+4,1,,,,Delta,FP1 - T8,ga_loo,0.012
+4,2,,,,Delta,CPz - F8,gcv,0.009
+4,2,,,,Delta,CPz - F8,loo,0.008
+4,2,,,,Delta,CPz - F8,ga_gcv,0.007
+4,2,,,,Delta,CPz - F8,ga_loo,0.007
+4,3,,,,Delta,FC5 - O2,gcv,0.004
+4,3,,,,Delta,FC5 - O2,loo,0.003
+4,3,,,,Delta,FC5 - O2,ga_gcv,0.005
+4,3,,,,Delta,FC5 - O2,ga_loo,0.004
+4,4,,,,Alpha,F3 - FC1,gcv,0.037
+4,4,,,,Alpha,F3 - FC1,loo,0.038
+4,4,,,,Alpha,F3 - FC1,ga_gcv,0.006
+4,4,,,,Alpha,F3 - FC1,ga_loo,0.007
+4,5,,,,Gamma,P4 - PO8,gcv,0.034
+4,5,,,,Gamma,P4 - PO8,loo,0.034
+4,5,,,,Gamma,P4 - PO8,ga_gcv,0.014
+4,5,,,,Gamma,P4 - PO8,ga_loo,0.015
