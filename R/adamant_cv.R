@@ -13,9 +13,18 @@
 # Source:  R_adaMantCV.R (Feb 2022).
 # -----------------------------------------------------------------------------
 
-# Percent rank as the compiled code of dplyr 0.8.5 (used by the original runs)
-# computes it: each distinct value, in ascending order, gets the running sum
-# of (number of values equal to it) / (m - 1).
+# Names of the four tests: penalty chosen by GCV or LOOCV, permutation
+# p-values or their gamma approximation (ga).
+TESTS <- c("gcv", "loo", "ga_gcv", "ga_loo")
+
+#' Percent rank as the compiled code of dplyr 0.8.5 (used by the original
+#' runs) computes it.
+#'
+#' Each distinct value, in ascending order, gets the running sum of (number of
+#' values equal to it) / (m - 1).
+#'
+#' @param x Numeric vector of length m.
+#' @return Numeric vector of the same length.
 percent_rank_cumulative <- function(x) {
   distinct <- sort(unique(x))
   position <- match(x, distinct)
@@ -23,23 +32,38 @@ percent_rank_cumulative <- function(x) {
   cumsum(c(0, counts / (length(x) - 1)))[position]
 }
 
-# Adaptive p-value: the percent rank of the observed data (first element)
-# among the p-values of all data sets, each taken at its own chosen penalty.
+#' Adaptive p-value of the observed data.
+#'
+#' @param chosen_pvalues P-values of all data sets, each at its own chosen
+#'   penalty; the observed data first.
+#' @return The percent rank of the first element among all elements.
 adaptive_pvalue <- function(chosen_pvalues) percent_rank_cumulative(chosen_pvalues)[1]
 
-# X: n x p predictors; Y: one response of length n; q: quantile below which
-# singular values are set to zero; n_negative, n_positive: sizes of the
-# penalty grid; n_perms: permutations; seed: seed of the permutations.
-# Row 1 of every per-permutation result is the observed data.
-# exact = TRUE computes every statistic in the operation order of the
-# original code; FALSE is the faster matrix form.
-# observed_lambda0: optional c(perms_below = , gamma = ), values of the
-#   observed data at lambda = 0 saved by the original run: the number of
-#   permuted statistics below the observed one and the gamma p-value. When
-#   given, the two p-values of the observed data at lambda = 0 are taken from
-#   them.
+#' Adaptive Mantel test with cross-validation.
+#'
+#' @param X Predictors, n x p.
+#' @param Y One response of length n.
+#' @param q Quantile below which singular values are set to zero.
+#' @param n_negative,n_positive Sizes of the penalty grid.
+#' @param n_perms Number of permutations.
+#' @param seed Seed of the permutations.
+#' @param upper Largest penalty.
+#' @param exact TRUE computes every statistic in the operation order of the
+#'   original code; FALSE is the faster matrix form.
+#' @param observed_lambda0 Optional `c(perms_below = , gamma = )`, values of
+#'   the observed data at lambda = 0 saved by the original run: the number of
+#'   permuted statistics below the observed one and the gamma p-value. When
+#'   given, the two p-values of the observed data at lambda = 0 are taken
+#'   from them.
+#' @param cores Number of parallel processes over the penalties in the
+#'   cross-validation.
+#' @return List with `p_values` (the four adaptive p-values, named as
+#'   `TESTS`), `lambdas` (the grid), `lambda_gcv` and `lambda_loo` (chosen
+#'   penalties), `gcv` and `loo` (scores), `statistics`, `p_perm` and
+#'   `p_gamma`. Row or element 1 of every per-data-set result is the observed
+#'   data, followed by the permutations.
 adamant_cv <- function(X, Y, q, n_negative, n_positive, n_perms, seed,
-                       upper = 1000, exact = TRUE, observed_lambda0 = NULL) {
+                       upper = 1000, exact = TRUE, observed_lambda0 = NULL, cores = 1) {
   X <- as.matrix(X)
   Y <- as.matrix(Y)
   n <- nrow(X)
@@ -61,7 +85,7 @@ adamant_cv <- function(X, Y, q, n_negative, n_positive, n_perms, seed,
     p_perm[1, lambdas == 0] <- 1 - observed_lambda0[["perms_below"]] / n_perms
     p_gamma[1, lambdas == 0] <- observed_lambda0[["gamma"]]
   }
-  cv <- ridge_cv(X, Y_perm, lambdas, variant = "feb2022")
+  cv <- ridge_cv(X, Y_perm, lambdas, variant = "feb2022", cores = cores)
 
   rows <- seq_len(n_perms + 1)
   best_gcv <- apply(cv$gcv, 1, which.min)

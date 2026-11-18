@@ -19,7 +19,6 @@
 
 source("R/setup.R")
 
-opts <- parse_args(list(runs = "500", scenarios = "all", perms = N_PERMS,
-                        negative = 50, positive = 200, cores = 4))
+opts <- parse_args(c(list(runs = "500", scenarios = "all"), test_options(PAPER)))
 
-simulation_study("table2_power_fixed", beta_type = "fixed", opts)
+simulation_study("table2_power_fixed", beta_type = "fixed", opts, PAPER, PATHS)

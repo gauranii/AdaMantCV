@@ -22,16 +22,12 @@ source("R/setup.R")
 
 # Triples and midpoints of the published figure (Dec 2021 version of R_Heat2.R).
 TRIPLES <- c(181, 231, 200, 144, 159, 136, 223, 205, 25, 179, 219, 123)  # bottom to top
-MIDPOINT_LOGP  <- 0.75  # white point of the colour scale, panel A
-MIDPOINT_POWER <- 0.4  # white point of the colour scale, panel B
+MIDPOINTS      <- c(logp = 0.75, power = 0.4)  # white points of the colour scales
 LAMBDA_DIGITS  <- 3
 AXIS_TEXT_SIZE <- 8
 
-opts <- parse_args(list(runs = 1000L, perms = N_PERMS, negative = EEG_GRID$negative,
-                        positive = EEG_GRID$positive, cores = 4))
+opts <- parse_args(curve_options(EEG_GRID, PAPER))
 
-curves <- eeg_curves(TRIPLES, opts)
-save_figure(heat_map(curves, "ave_logpval", MIDPOINT_LOGP, LAMBDA_DIGITS,
-                     opts$negative, AXIS_TEXT_SIZE), "fig6a_logp_eeg_heat.pdf")
-save_figure(heat_map(curves, "power", MIDPOINT_POWER, LAMBDA_DIGITS,
-                     opts$negative, AXIS_TEXT_SIZE), "fig6b_power_eeg_heat.pdf")
+save_heat_maps("fig6", "eeg_heat.pdf", eeg_curves(TRIPLES, opts, PAPER, PATHS), "power",
+               MIDPOINTS, LAMBDA_DIGITS, opts$negative, AXIS_TEXT_SIZE,
+               PATHS$figures, PAPER$figure_size)

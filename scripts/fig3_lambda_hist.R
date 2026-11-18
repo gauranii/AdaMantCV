@@ -28,46 +28,16 @@ PANELS <- data.frame(panel = c("a", "b", "c", "d"),
                      beta_type = c("zero", "zero", "fixed", "fixed"),
                      tau = c("Q1", "Q2", "Q1", "Q2"))
 
-opts <- parse_args(list(perms = N_PERMS, negative = 50, positive = 200, cores = 4))
+opts <- parse_args(test_options(PAPER))
 
-# Penalty chosen by GCV and LOOCV for the observed data (b = 1) and every
-# permutation of one replication, for each row of PANELS.
-chosen_lambdas <- function() {
-  designs <- lapply(c(zero = "zero", fixed = "fixed"), function(beta_type) {
-    simulate_design(SIM_N, DIMENSION, COVARIANCE, SIM_RHO, beta_type, SIM_BETA_MEAN,
-                    SIGMA, SEED)
-  })
-  chosen <- parallel::mclapply(seq_len(nrow(PANELS)), function(i) {
-    ada <- simulation_run(designs[[PANELS$beta_type[i]]], REPLICATION,
-                          SIM_QUANTILES[[PANELS$tau[i]]], SIGMA, opts$negative,
-                          opts$positive, opts$perms, SEED, UPPER)
-    data.frame(PANELS[i, ], b = seq_along(ada$lambda_gcv), GCV = ada$lambda_gcv,
-               LOOCV = ada$lambda_loo, row.names = NULL)
-  }, mc.cores = opts$cores)
-  do.call(rbind, chosen)
-}
-
-lambdas <- if (opts$rerun) {
-  cached_csv(results_path(sprintf("fig3_lambdas_%s.csv", settings_tag(opts))), chosen_lambdas)
-} else {
-  read.csv(archive_path("run0204b", "fig3_lambdas.csv"))
-}
+lambdas <- chosen_penalties(PANELS, REPLICATION, DIMENSION, COVARIANCE, opts, PAPER, PATHS)
 
 # The histograms show the permutations (b = 1 is the observed data).
 lambdas <- lambdas[lambdas$b >= 2, ]
 
 for (i in seq_len(nrow(PANELS))) {
-  shown <- lambdas[lambdas$panel == PANELS$panel[i], ]
-  long <- data.frame(variable = rep(paste(c("GCV", "LOOCV"), "tau =", PANELS$tau[i]),
-                                    each = nrow(shown)),
-                     value = c(shown$GCV, shown$LOOCV))
-  is_gcv <- startsWith(long$variable, "GCV")
-  hist <- ggplot(long, aes(x = value, color = variable)) +
-    geom_histogram(data = long[is_gcv, ], fill = "red", binwidth = BIN_WIDTH,
-                   alpha = 0.2) +
-    geom_histogram(data = long[!is_gcv, ], fill = "white", binwidth = BIN_WIDTH,
-                   alpha = 0.2) +
-    xlab("optimal ridge penalty estimates") + ylab("") + theme_bw() +
-    theme(legend.position = "bottom")
-  save_figure(hist, sprintf("fig3%s_lambda_hist.pdf", PANELS$panel[i]))
+  hist <- penalty_histogram(lambdas[lambdas$panel == PANELS$panel[i], ], PANELS$tau[i],
+                            BIN_WIDTH)
+  save_figure(hist, sprintf("fig3%s_lambda_hist.pdf", PANELS$panel[i]), PATHS$figures,
+              PAPER$figure_size)
 }

@@ -19,18 +19,14 @@
 
 source("R/setup.R")
 
-MIDPOINT_LOGP  <- 4    # white point of the colour scale, panel A
-MIDPOINT_POWER <- 0.5  # white point of the colour scale, panel B
+MIDPOINTS      <- c(logp = 4, power = 0.5)  # white points of the colour scales
 LAMBDA_DIGITS  <- 1
 AXIS_TEXT_SIZE <- 8
 
-opts <- parse_args(list(runs = 1000L, perms = N_PERMS, negative = LIVER_GRID$negative,
-                        positive = LIVER_GRID$positive, cores = 4))
+opts <- parse_args(curve_options(LIVER_GRID, PAPER))
 
-curves <- liver_curves(opts)
-save_figure(heat_map(curves, "ave_logpval", MIDPOINT_LOGP, LAMBDA_DIGITS,
-                     opts$negative - 1, AXIS_TEXT_SIZE), "fig2a_logp_liver_heat.pdf")
 # Panel B shows the power of the gamma approximation (column power_MOM), as
 # drawn by R_Heat3.R.
-save_figure(heat_map(curves, "power_MOM", MIDPOINT_POWER, LAMBDA_DIGITS,
-                     opts$negative - 1, AXIS_TEXT_SIZE), "fig2b_power_liver_heat.pdf")
+save_heat_maps("fig2", "liver_heat.pdf", liver_curves(opts, PAPER, PATHS), "power_MOM",
+               MIDPOINTS, LAMBDA_DIGITS, opts$negative - 1, AXIS_TEXT_SIZE,
+               PATHS$figures, PAPER$figure_size)

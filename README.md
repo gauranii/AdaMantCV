@@ -18,19 +18,21 @@ a diagram and has no code.
 
 | Path | Content |
 |---|---|
-| `R/setup.R` | Loader sourced by every script: settings, seeds, paths, argument parser |
+| `R/setup.R` | Loader sourced by every script: settings of the paper, paths, argument parser |
 | `R/mantel.R` | Truncated SVD, grid of ridge penalties, Mantel statistics, permutation and gamma p-values |
 | `R/ridge_cv.R` | GCV and LOOCV scores of ridge regression over the penalty grid |
 | `R/adamant_cv.R` | `adamant_cv()`, the test with penalties chosen by GCV or LOOCV |
 | `R/simulation.R` | Simulated designs and the simulation study of Tables 1 to 3 |
 | `R/power_curve.R` | Power and GCV curves over the penalty grid (Figures 2, 5 to 8) |
 | `R/data.R` | Readers for the data and for the archived curves, labels of the EEG triples |
-| `R/plots.R` | Heat maps and scatter plots |
+| `R/eeg_tests.R` | The tests of the EEG triples (Table 4) |
+| `R/liver_cv.R` | Cross-validated ridge regression of the liver data (Figure 1) |
+| `R/plots.R` | Heat maps, scatter plots and histograms |
 | `scripts/` | One script per table or figure |
 | `archive/` | Outputs of the original runs that the scripts read, the published figure files (`figures/`), and `reduce_archive.R`, which made the former from the run folders |
 | `data/liver/` | The liver toxicity data |
 | `reference/` | The 250 EEG triples (`triple.csv`), the channel names, and `table4_cluster_lambda0.csv` |
-| `checks/` | The numbers printed in the paper (`paper_values.csv`), the comparison scripts and their result (`RESULTS.md`) |
+| `checks/` | The numbers printed in the paper (`paper_values.csv`), the comparison scripts and their result (`RESULTS.md`), and `check_equivalence.R`, which compares the outputs of two versions of the code |
 | `flake.nix`, `flake.lock` | Pinned environment (R with ggplot2, MASS and glmnet; Python for the checks), one command per output, and the checks |
 
 ## Running

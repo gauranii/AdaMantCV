@@ -27,7 +27,7 @@ GCV_WINDOWS <- data.frame(triple = c(223, 22, 25),
                           last   = c(750, 650, 750),
                           y_max  = c(25, 25, 18))
 
-opts <- parse_args(list(runs = 1000L, perms = N_PERMS, negative = EEG_GRID$negative,
-                        positive = EEG_GRID$positive, cores = 4))
+opts <- parse_args(curve_options(EEG_GRID, PAPER))
 
-save_power_gcv_panels("fig7", GCV_WINDOWS, opts)
+save_power_gcv_panels("fig7", GCV_WINDOWS, eeg_curves(GCV_WINDOWS$triple, opts, PAPER, PATHS),
+                      PATHS$figures, PAPER$figure_size)

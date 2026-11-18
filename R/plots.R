@@ -2,25 +2,42 @@
 # File:    R/plots.R
 # Paper:   Gauran, Xue, Chen, Ombao, Yu (2022). Ridge Penalization in High
 #          Dimensional Testing with Applications to Imaging Genetics.
-#          Front. Neurosci. 16:836100. Figures 2 and 5 to 8.
+#          Front. Neurosci. 16:836100. Figures 2, 3 and 5 to 8.
 # Purpose: Plots shared by several figures: the heat map of a curve over the
-#          ridge penalties and the scatter of a curve against the penalty.
+#          ridge penalties, the scatter of a curve against the penalty, and
+#          the histogram of chosen penalties.
 # Inputs:  None.
 # Outputs: figures/<name>.pdf (written by save_figure()).
-# Usage:   source("R/setup.R"); heat_map(curves, "power", midpoint = 0.4)
-# Source:  R_Heat1.R, R_Heat2.R, R_Heat3.R, R_Output_plots.R, RPC_fcns.R.
+# Usage:   source("R/setup.R"); heat_map(curves, "power", 0.4, 3, 500, 10)
+# Source:  R_Heat1.R, R_Heat2.R, R_Heat3.R, R_Output_plots.R, R_Lambda.R,
+#          RPC_fcns.R.
 # -----------------------------------------------------------------------------
 
 library(ggplot2)
 
-save_figure <- function(plot, name) {
-  ggsave(figures_path(name), plot, width = FIGURE_SIZE, height = FIGURE_SIZE)
+#' Save a square figure as pdf.
+#'
+#' @param plot A ggplot object.
+#' @param name File name.
+#' @param figures_dir Folder of the figures.
+#' @param size Width and height in inches.
+#' @return NULL, invisibly.
+save_figure <- function(plot, name, figures_dir, size) {
+  ggsave(output_file(figures_dir, name), plot, width = size, height = size)
   log_message("wrote figures/%s", name)
 }
 
-# Heat map of one column of several curve tables (one row per table, first
-# table at the bottom) against the penalties rounded to `digits` decimals. A
-# green line marks position `zero_position` on the penalty axis (the zero).
+#' Heat map of one column of several curve tables against the penalties.
+#'
+#' @param curves Named list of curve tables; one row of tiles per table, the
+#'   first table at the bottom.
+#' @param column Column of the tables to show.
+#' @param midpoint White point of the colour scale.
+#' @param digits Decimals to which the penalties are rounded on the axis.
+#' @param zero_position Position on the penalty axis of the green line that
+#'   marks zero.
+#' @param text_size Size of the axis text.
+#' @return A ggplot object.
 heat_map <- function(curves, column, midpoint, digits, zero_position, text_size) {
   long <- do.call(rbind, lapply(names(curves), function(label) {
     data.frame(lambdas = round(curves[[label]]$lambdas, digits),
@@ -38,8 +55,34 @@ heat_map <- function(curves, column, midpoint, digits, zero_position, text_size)
           axis.title = element_text(size = 8))
 }
 
-# Points of one column of a curve table against the penalty, coloured by the
-# sign of the penalty.
+#' Save the two heat maps of a figure: mean -log10 p-value (panel A) and
+#' power (panel B).
+#'
+#' @param figure Prefix of the file names (for example "fig5").
+#' @param suffix End of the file names (for example "eeg_heat.pdf").
+#' @param curves Named list of curve tables.
+#' @param power_column Column shown in panel B.
+#' @param midpoints White points of the colour scales, `c(logp = , power = )`.
+#' @param digits,zero_position,text_size As for `heat_map()`.
+#' @param figures_dir,size As for `save_figure()`.
+#' @return NULL, invisibly.
+save_heat_maps <- function(figure, suffix, curves, power_column, midpoints, digits,
+                           zero_position, text_size, figures_dir, size) {
+  save_figure(heat_map(curves, "ave_logpval", midpoints[["logp"]], digits, zero_position,
+                       text_size),
+              sprintf("%sa_logp_%s", figure, suffix), figures_dir, size)
+  save_figure(heat_map(curves, power_column, midpoints[["power"]], digits, zero_position,
+                       text_size),
+              sprintf("%sb_power_%s", figure, suffix), figures_dir, size)
+}
+
+#' Points of one column of a curve table against the penalty, coloured by the
+#' sign of the penalty.
+#'
+#' @param table A curve table.
+#' @param column Column to show.
+#' @param label Label of the vertical axis.
+#' @return A ggplot object.
 sign_scatter <- function(table, column, label) {
   ggplot(table, aes(x = lambdas, y = .data[[column]])) +
     geom_point(aes(color = 2 + sign(lambdas)), size = 1) + theme_bw() +
@@ -47,18 +90,45 @@ sign_scatter <- function(table, column, label) {
     theme(legend.position = "none")
 }
 
-# Power (all penalties) and GCV (a window of penalties) panels of the triples
-# in `windows` (columns triple, first, last, y_max): the GCV panel shows rows
-# first to last of the curve table, without the rows with gcv above y_max.
-save_power_gcv_panels <- function(figure, windows, opts) {
+#' Save the power panel (all penalties) and the GCV panel (a window of
+#' penalties) of several triples.
+#'
+#' @param figure Prefix of the file names (for example "fig7").
+#' @param windows Data frame with columns `triple`, `first`, `last`, `y_max`:
+#'   the GCV panel shows rows `first` to `last` of the curve table, without
+#'   the rows with gcv above `y_max`.
+#' @param curves List of curve tables, one per row of `windows`.
+#' @param figures_dir,size As for `save_figure()`.
+#' @return NULL, invisibly.
+save_power_gcv_panels <- function(figure, windows, curves, figures_dir, size) {
   for (i in seq_len(nrow(windows))) {
     w <- windows[i, ]
-    table <- eeg_curves(w$triple, opts)[[1]]
+    table <- curves[[i]]
     save_figure(sign_scatter(table, "power", "power"),
-                sprintf("%s_power_%d.pdf", figure, w$triple))
+                sprintf("%s_power_%d.pdf", figure, w$triple), figures_dir, size)
     shown <- table[intersect(w$first:w$last, seq_len(nrow(table))), ]
     save_figure(sign_scatter(shown[shown$gcv <= w$y_max, ], "gcv",
                              "Generalized Cross Validation"),
-                sprintf("%s_gcv_%d.pdf", figure, w$triple))
+                sprintf("%s_gcv_%d.pdf", figure, w$triple), figures_dir, size)
   }
+}
+
+#' Histograms of the penalties chosen by GCV and by LOOCV.
+#'
+#' @param chosen Data frame with columns `GCV` and `LOOCV`.
+#' @param tau Label of the truncation in the legend.
+#' @param bin_width Width of the bins.
+#' @return A ggplot object.
+penalty_histogram <- function(chosen, tau, bin_width) {
+  long <- data.frame(variable = rep(paste(c("GCV", "LOOCV"), "tau =", tau),
+                                    each = nrow(chosen)),
+                     value = c(chosen$GCV, chosen$LOOCV))
+  is_gcv <- startsWith(long$variable, "GCV")
+  ggplot(long, aes(x = value, color = variable)) +
+    geom_histogram(data = long[is_gcv, ], fill = "red", binwidth = bin_width,
+                   alpha = 0.2) +
+    geom_histogram(data = long[!is_gcv, ], fill = "white", binwidth = bin_width,
+                   alpha = 0.2) +
+    xlab("optimal ridge penalty estimates") + ylab("") + theme_bw() +
+    theme(legend.position = "bottom")
 }

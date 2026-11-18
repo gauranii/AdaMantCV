@@ -33,12 +33,12 @@ tables <- list(table1 = list(prefix = "T1", beta_fixed = FALSE),
                table2 = list(prefix = "P", beta_fixed = TRUE),
                table3 = list(prefix = "P", beta_fixed = FALSE))
 for (name in names(tables)) {
-  scenarios <- simulation_scenarios(tables[[name]]$beta_fixed)$scenario
+  scenarios <- simulation_scenarios(tables[[name]]$beta_fixed, SIMULATION_DESIGN)$scenario
   pvalues <- do.call(rbind, lapply(scenarios, function(s) {
     p <- t(read_text("run0204b", sprintf("%s_pvals_%d.csv", tables[[name]]$prefix, s)))
     data.frame(scenario = s, run = seq_len(nrow(p)), setNames(as.data.frame(p), P_COLUMNS))
   }))
-  write_text(pvalues, archive_path("run0204b", paste0(name, "_pvalues.csv")))
+  write_text(pvalues, file.path(PATHS$archive, "run0204b", paste0(name, "_pvalues.csv")))
 }
 
 # Figure 3: penalties chosen by GCV and LOOCV for the observed data (b = 1)
@@ -50,17 +50,17 @@ lambdas <- do.call(rbind, lapply(seq_len(nrow(panels)), function(i) {
   data.frame(panel = panels$panel[i], b = summary[[1]],
              GCV = summary[[ncol(summary) - 1]], LOOCV = summary[[ncol(summary)]])
 }))
-write_text(lambdas, archive_path("run0204b", "fig3_lambdas.csv"))
+write_text(lambdas, file.path(PATHS$archive, "run0204b", "fig3_lambdas.csv"))
 
 # Table 4: p-values at the chosen penalties of the observed data (b = 1) and
 # every permutation, and the chosen penalties.
-pvalues <- do.call(rbind, lapply(TABLE4_TRIPLES, function(k) {
+pvalues <- do.call(rbind, lapply(c(11, 27, 70, 178, 248), function(k) {
   ranks <- read_text("real0210a", sprintf("PctRk_%dq_0.5.csv", k))
   data.frame(triple = k, b = ranks$b,
              setNames(ranks[c("Pval_b_gcv", "Pval_b_loo", "Pval_g_gcv", "Pval_g_loo")], P_COLUMNS),
              lambda_gcv = ranks$l_gcv, lambda_loo = ranks$l_loo)
 }))
-write_text(pvalues, archive_path("real0210a", "table4_pvalues.csv"))
+write_text(pvalues, file.path(PATHS$archive, "real0210a", "table4_pvalues.csv"))
 
 # Figures 2 and 5 to 8: power and cross-validation curves over the penalties.
 curves <- function(source, target) {
@@ -71,8 +71,8 @@ curves <- function(source, target) {
 EEG_FIGURE_TRIPLES <- c(160, 248, 191, 183, 184, 220, 148, 177, 22, 157, 31, 151,   # Figure 5
                         181, 231, 200, 144, 159, 136, 223, 205, 25, 179, 219, 123)  # Figure 6
 for (k in EEG_FIGURE_TRIPLES) {
-  curves(file.path("coh7", sprintf("CV_ch%d.csv", k)), archived_curve_file("eeg", k))
+  curves(file.path("coh7", sprintf("CV_ch%d.csv", k)), archived_curve_file("eeg", k, PATHS$archive))
 }
 for (j in seq_along(LIVER_LABELS)) {
-  curves(file.path("liver", sprintf("liver_CV_ch%d.csv", j)), archived_curve_file("liver", j))
+  curves(file.path("liver", sprintf("liver_CV_ch%d.csv", j)), archived_curve_file("liver", j, PATHS$archive))
 }

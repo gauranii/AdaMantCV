@@ -20,16 +20,12 @@
 source("R/setup.R")
 
 TRIPLES <- c(160, 248, 191, 183, 184, 220, 148, 177, 22, 157, 31, 151)  # bottom to top
-MIDPOINT_LOGP  <- 1.25  # white point of the colour scale, panel A
-MIDPOINT_POWER <- 0.4  # white point of the colour scale, panel B
+MIDPOINTS      <- c(logp = 1.25, power = 0.4)  # white points of the colour scales
 LAMBDA_DIGITS  <- 3
 AXIS_TEXT_SIZE <- 10
 
-opts <- parse_args(list(runs = 1000L, perms = N_PERMS, negative = EEG_GRID$negative,
-                        positive = EEG_GRID$positive, cores = 4))
+opts <- parse_args(curve_options(EEG_GRID, PAPER))
 
-curves <- eeg_curves(TRIPLES, opts)
-save_figure(heat_map(curves, "ave_logpval", MIDPOINT_LOGP, LAMBDA_DIGITS,
-                     opts$negative, AXIS_TEXT_SIZE), "fig5a_logp_eeg_heat.pdf")
-save_figure(heat_map(curves, "power", MIDPOINT_POWER, LAMBDA_DIGITS,
-                     opts$negative, AXIS_TEXT_SIZE), "fig5b_power_eeg_heat.pdf")
+save_heat_maps("fig5", "eeg_heat.pdf", eeg_curves(TRIPLES, opts, PAPER, PATHS), "power",
+               MIDPOINTS, LAMBDA_DIGITS, opts$negative, AXIS_TEXT_SIZE,
+               PATHS$figures, PAPER$figure_size)

@@ -14,64 +14,35 @@
 # -----------------------------------------------------------------------------
 
 source("R/setup.R")
-opts <- parse_args(list())  # no options; Figure 1 is always computed from the data
-
-library(glmnet)
 
 SUBSET_SEED    <- 889191 + 1  # seed of panel A
 SUBSET_SIZE    <- 50
 SUBSET_LAMBDAS <- 10^seq(4, -2.5, by = -0.001)
 # Panel B continues the random number stream of the original session: seed
 # 889191 + 2, one sample of 50 genes, then eleven fold assignments.
-FULL_SEED      <- 889191 + 2
+FULL_SEED          <- 889191 + 2
 FULL_SKIPPED_FOLDS <- 11
 FULL_LAMBDAS   <- 10^seq(9, -5, by = -0.1)
 N_FOLDS        <- 10
 MSE_AXIS_MAX   <- 1.2
 
-# Cross-validated MSE of every clinical variable over the penalties, long format.
-cv_curves <- function(X, Y, lambdas) {
-  do.call(rbind, lapply(seq_len(ncol(Y)), function(j) {
-    fit <- cv.glmnet(X, Y[, j], alpha = 0, nfolds = N_FOLDS, lambda = lambdas)
-    data.frame(variable = paste0("Variable", j), log_lambda = log(lambdas),
-               cvm = fit$cvm, at_minimum = fit$cvm == min(fit$cvm),
-               log_lambda_min = log(fit$lambda.min))
-  }))
-}
+opts <- parse_args(list())  # no options; Figure 1 is always computed from the data
 
-cv_plot <- function(curves) {
-  curves$variable <- factor(curves$variable, levels = unique(curves$variable))
-  ggplot(curves, aes(x = log_lambda, y = cvm, color = variable)) +
-    geom_line(linewidth = 1) + theme_bw() +
-    geom_point(data = curves[curves$at_minimum, ], color = "blue") +
-    xlab("log(lambda)") + ylab("Cross-validated MSE") +
-    theme(legend.position = "none") +
-    ylim(NA, MSE_AXIS_MAX)
-}
-
-minima <- function(curves, panel) {
-  lowest <- curves[curves$at_minimum & curves$log_lambda == curves$log_lambda_min, ]
-  data.frame(panel = panel, variable = lowest$variable,
-             log_lambda_min = lowest$log_lambda_min, min_cvm = lowest$cvm)
-}
-
-liver <- read_liver()
+liver <- read_liver(PATHS$liver)
+n_genes <- ncol(liver$X)
 
 set.seed(SUBSET_SEED)
-genes <- sample(seq_len(ncol(liver$X)), SUBSET_SIZE, replace = FALSE)
-subset_curves <- cv_curves(liver$X[, genes], liver$Y, SUBSET_LAMBDAS)
+genes <- sample(seq_len(n_genes), SUBSET_SIZE, replace = FALSE)
+subset_curves <- cv_curves(liver$X[, genes], liver$Y, SUBSET_LAMBDAS, N_FOLDS)
 
-# Random number stream as in the original run: after the seed, the gene
-# sample and FULL_SKIPPED_FOLDS fold assignments are drawn before the fits of
-# panel B (cv.glmnet() draws one fold assignment per fit).
 set.seed(FULL_SEED)
-invisible(sample(seq_len(ncol(liver$X)), SUBSET_SIZE, replace = FALSE))
-for (i in seq_len(FULL_SKIPPED_FOLDS)) {
-  invisible(sample(rep(seq_len(N_FOLDS), length = nrow(liver$X))))
-}
-full_curves <- cv_curves(liver$X, liver$Y, FULL_LAMBDAS)
+invisible(sample(seq_len(n_genes), SUBSET_SIZE, replace = FALSE))
+skip_fold_assignments(FULL_SKIPPED_FOLDS, nrow(liver$X), N_FOLDS)
+full_curves <- cv_curves(liver$X, liver$Y, FULL_LAMBDAS, N_FOLDS)
 
-save_figure(cv_plot(subset_curves), "fig1a_liver_cv_subset.pdf")
-save_figure(cv_plot(full_curves), "fig1b_liver_cv_full.pdf")
-write.csv(rbind(minima(subset_curves, "A"), minima(full_curves, "B")),
-          results_path("fig1_minima.csv"), row.names = FALSE)
+save_figure(cv_plot(subset_curves, MSE_AXIS_MAX), "fig1a_liver_cv_subset.pdf",
+            PATHS$figures, PAPER$figure_size)
+save_figure(cv_plot(full_curves, MSE_AXIS_MAX), "fig1b_liver_cv_full.pdf",
+            PATHS$figures, PAPER$figure_size)
+write.csv(rbind(cv_minima(subset_curves, "A"), cv_minima(full_curves, "B")),
+          output_file(PATHS$results, "fig1_minima.csv"), row.names = FALSE)
