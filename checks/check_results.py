@@ -72,31 +72,41 @@ for gf in sorted(glob.glob(os.path.join(res, 'gcv_eeg*_grid500x2000.csv'))):
     compare_curves(f'EEG {k}', os.path.join(archive, 'coh7', f'CV_ch{k}.csv'), pf[-1] if pf else None, gf)
 
 # ----- Table 4 -----
+# Three versions (scripts/table4_eeg_pvalues.R --version=...): best_fit (the
+# default), original (rounding of this machine) and paper (correct method).
 paper = read(os.path.join(repo, 'checks', 'paper_values.csv'))
-t4 = glob.glob(os.path.join(res, 'table4_eeg_pvalues_perms1000_grid50x200.csv'))
-if t4:
-    t = read(t4[0])
-    methods = ['gcv', 'loo', 'ga_gcv', 'ga_loo']
-    rebuilt = [round(float(r[m]), 3) for r in t for m in methods]
-    printed = [float(r['value']) for r in paper if r['table'] == '4']
-    archived = [round(float(x[1]), 3) for k in [11, 27, 70, 178, 248]
-                for x in list(csv.reader(open(os.path.join(archive, 'real0210a', f'AdaPval_{k}q_0.5.csv'))))[1:]]
-    report('Table 4', 'archived run outputs equal to paper (cells)',
-           f'{sum(a == b for a, b in zip(archived, printed))}/20', archived == printed)
-    report('Table 4', 'rebuilt equal to paper (cells)', f'{sum(a == b for a, b in zip(rebuilt, printed))}/20',
-           rebuilt == printed)
-    if original_rerun:
+printed = [float(r['value']) for r in paper if r['table'] == '4']
+methods = ['gcv', 'loo', 'ga_gcv', 'ga_loo']
+archived = [round(float(x[1]), 3) for k in [11, 27, 70, 178, 248]
+            for x in list(csv.reader(open(os.path.join(archive, 'real0210a', f'AdaPval_{k}q_0.5.csv'))))[1:]]
+report('Table 4', 'archived run outputs equal to paper (cells)',
+       f'{sum(a == b for a, b in zip(archived, printed))}/20', archived == printed)
+expect = {'best_fit': lambda v: v == printed, 'original': lambda v: True,
+          'paper': lambda v: all(x == 1 for x in v)}
+for version, ok in expect.items():
+    f = os.path.join(res, f'table4_eeg_pvalues_{version}_perms1000_grid50x200.csv')
+    if not os.path.exists(f):
+        continue
+    t = read(f)
+    values = [round(float(r[m]), 3) for r in t for m in methods]
+    report('Table 4', f'{version}: cells equal to paper',
+           f'{sum(a == b for a, b in zip(values, printed))}/20', ok(values))
+    zero = [int(float(r['perms_at_zero_gcv'])) for r in t]
+    report('Table 4', f'{version}: permutations choosing lambda = 0 by GCV, per triple',
+           ' '.join(map(str, zero)), True)
+    if version == 'original' and original_rerun:
         orig = [round(float(x[1]), 3) for k in [11, 27, 70, 178, 248]
                 for x in list(csv.reader(open(os.path.join(original_rerun, f'AdaPval_{k}q_0.5.csv'))))[1:]]
-        report('Table 4', 'rebuilt equal to ORIGINAL code rerun on this machine',
-               f'{sum(a == b for a, b in zip(rebuilt, orig))}/20', rebuilt == orig)
-        same = all(open(os.path.join(original_rerun, f'SummaryCV_{k}q_0.5.csv')).read() ==
-                   open(os.path.join(archive, 'real0210a', f'SummaryCV_{k}q_0.5.csv')).read()
-                   for k in [11, 27, 70, 178, 248])
-        report('Table 4', 'original rerun: lambdas chosen per permutation = archive', str(same), same)
-    chosen = [read(os.path.join(archive, 'real0210a', f'SummaryCV_{k}q_0.5.csv'))[0]['lhat_GCV']
-              for k in [11, 27, 70, 178, 248]]
-    report('Table 4', 'archive: lambda chosen by GCV for the observed data', ' '.join(chosen), True)
+        report('Table 4', 'original: equal to ORIGINAL code rerun on this machine',
+               f'{sum(a == b for a, b in zip(values, orig))}/20', values == orig)
+if original_rerun:
+    same = all(open(os.path.join(original_rerun, f'SummaryCV_{k}q_0.5.csv')).read() ==
+               open(os.path.join(archive, 'real0210a', f'SummaryCV_{k}q_0.5.csv')).read()
+               for k in [11, 27, 70, 178, 248])
+    report('Table 4', 'original rerun: lambdas chosen per permutation = archive', str(same), same)
+chosen = [read(os.path.join(archive, 'real0210a', f'SummaryCV_{k}q_0.5.csv'))[0]['lhat_GCV']
+          for k in [11, 27, 70, 178, 248]]
+report('Table 4', 'archive: lambda chosen by GCV for the observed data', ' '.join(chosen), True)
 
 # ----- Fig 3: rebuilt replication 500 (simulated X; LAPACK dependent) -----
 f3 = glob.glob(os.path.join(res, 'fig3_lambdas_perms1000_grid50x200.csv'))

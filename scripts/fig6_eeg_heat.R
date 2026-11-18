@@ -11,6 +11,7 @@
 #          (shared with Figs 5 to 8), figures/fig6{a_logp,b_power}_eeg_heat.pdf.
 # Usage:   Rscript scripts/fig6_eeg_heat.R [--runs=1000] [--perms=1000] [--negative=500]
 #          [--positive=2000] [--cores=4]
+#          --method=paper: the method as the paper states it (README).
 # Source:  R_Heat2.R (heat1, tile1; Dec 2021 version, see below);
 #          EEG_t184.R, RPC_fcns.R (the curves).
 # -----------------------------------------------------------------------------
@@ -26,7 +27,8 @@ MIDPOINT_POWER <- 0.4  # white point of the colour scale, panel B
 LAMBDA_DIGITS  <- 3
 AXIS_TEXT_SIZE <- 8
 
-opts <- parse_args(list(runs = 1000L, perms = N_PERMS, negative = EEG_GRID$negative,
+opts <- parse_args(list(method = "original",
+                        runs = 1000L, perms = N_PERMS, negative = EEG_GRID$negative,
                         positive = EEG_GRID$positive, cores = 4))
 
 curves <- eeg_curves(TRIPLES, opts)

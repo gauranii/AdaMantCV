@@ -7,6 +7,7 @@
 #          2. rebuilt functions vs the original 2021/2022 functions (optional)
 #          3. published figures vs the same figures redrawn from the archive
 #          4. rebuilt results (results/) vs the archive and the paper
+#          5. the side-by-side tables of the README vs the results
 # Usage:   ADAMANT_DATA=... ADAMANT_ARCHIVE=... ADAMANT_PUBLISHED=... \
 #          [ADAMANT_ORIGINAL=... ADAMANT_ORIGINAL_RERUN=...] bash checks/run_checks.sh
 #          Run from the repository root after the figure and table scripts.
@@ -37,3 +38,4 @@ rm -rf "$redraw"
 
 "$python" checks/check_results.py "$ADAMANT_ARCHIVE" "$repo" ${ADAMANT_ORIGINAL_RERUN:-} | tee "$out/results.txt"
 "$python" checks/write_results.py "$out" > checks/RESULTS.md
+"$python" checks/check_readme.py "$repo" "$ADAMANT_PUBLISHED/LiverToxicityFull.pdf"

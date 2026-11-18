@@ -21,8 +21,11 @@ SUBSET_SEED    <- 889191 + 1  # seed of the published panel A
 SUBSET_SIZE    <- 50
 SUBSET_LAMBDAS <- 10^seq(4, -2.5, by = -0.001)
 # The original set no seed before the fits of panel B, so its random folds are
-# lost and the published panel cannot be reproduced fold for fold.
-FULL_SEED      <- 889191
+# lost and the published panel cannot be reproduced fold for fold. Of 17 seeds
+# and session states tried (checks/search/, N15), the closest is the state the
+# original script leaves after its panel A loop over k = 1, 2: seed
+# 889191 + 2, the 50 genes of k = 2, and the folds of its ten fits.
+FULL_AFTER_SEED <- 889191 + 2
 FULL_LAMBDAS   <- 10^seq(9, -5, by = -0.1)
 N_FOLDS        <- 10
 MSE_AXIS_MAX   <- 1.2
@@ -59,7 +62,12 @@ set.seed(SUBSET_SEED)
 genes <- sample(seq_len(ncol(liver$X)), SUBSET_SIZE, replace = FALSE)
 subset_curves <- cv_curves(liver$X[, genes], liver$Y, SUBSET_LAMBDAS)
 
-set.seed(FULL_SEED)
+# Draw what the k = 2 pass of the original loop drew (its curves are not
+# shown): the gene sample, then one fold assignment per variable, which is all
+# cv.glmnet() takes from the random number stream.
+set.seed(FULL_AFTER_SEED)
+invisible(sample(seq_len(ncol(liver$X)), SUBSET_SIZE, replace = FALSE))
+for (j in seq_len(ncol(liver$Y))) invisible(sample(rep(seq_len(N_FOLDS), length = nrow(liver$X))))
 full_curves <- cv_curves(liver$X, liver$Y, FULL_LAMBDAS)
 
 save_figure(cv_plot(subset_curves), "fig1a_liver_cv_subset.pdf")

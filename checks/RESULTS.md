@@ -1,4 +1,4 @@
-# Check results (2026-11-16)
+# Check results (2026-11-18)
 
 Written by `checks/run_checks.sh`. "differs" is not always a failure: the
 README explains each expected difference.
@@ -77,7 +77,7 @@ Tables 1-3 from the 500 per-run p-values: 144/144 with p < 0.05, 106/144 with p 
 | Fig 8 | GCV184: points, largest offset after scaling (pt) | 158, 0.008 | OK |
 | Fig 8 | GCV160: points, largest offset after scaling (pt) | 175, 0.008 | OK |
 | Fig 1A | blue minimum points vs rebuilt minima, largest offset (pt) | 10, 0.006 | OK |
-| Fig 1B | blue minimum points vs rebuilt minima, largest offset (pt) | 10, 19.929 | differs |
+| Fig 1B | blue minimum points vs rebuilt minima, largest offset (pt) | 10, 14.888 | differs |
 | fig7_gcv_22 | GCV panel drawn from rebuilt table: points | 166 | OK |
 | fig7_gcv_223 | GCV panel drawn from rebuilt table: points | 275 | OK |
 | fig7_gcv_25 | GCV panel drawn from rebuilt table: points | 274 | OK |
@@ -99,7 +99,7 @@ Tables 1-3 from the 500 per-run p-values: 144/144 with p < 0.05, 106/144 with p 
 
 ## 4. Rebuilt results against the archive and the paper
 
-148 of 149 checks OK.
+154 of 154 checks OK.
 
 | item | check | value | ok |
 |---|---|---|---|
@@ -240,8 +240,13 @@ Tables 1-3 from the 500 per-run p-values: 144/144 with p < 0.05, 106/144 with p 
 | EEG 31 | power table (1000 runs) vs archive (1000 runs), lambda != 0 | 1.0e-14 | OK |
 | EEG 31 | power at lambda = 0 (tied statistic), difference | 0.095 | OK |
 | Table 4 | archived run outputs equal to paper (cells) | 20/20 | OK |
-| Table 4 | rebuilt equal to paper (cells) | 0/20 | differs |
-| Table 4 | rebuilt equal to ORIGINAL code rerun on this machine | 20/20 | OK |
+| Table 4 | best_fit: cells equal to paper | 20/20 | OK |
+| Table 4 | best_fit: permutations choosing lambda = 0 by GCV, per triple | 0 0 0 0 0 | OK |
+| Table 4 | original: cells equal to paper | 0/20 | OK |
+| Table 4 | original: permutations choosing lambda = 0 by GCV, per triple | 0 0 0 0 0 | OK |
+| Table 4 | original: equal to ORIGINAL code rerun on this machine | 20/20 | OK |
+| Table 4 | paper: cells equal to paper | 0/20 | OK |
+| Table 4 | paper: permutations choosing lambda = 0 by GCV, per triple | 1000 1000 1000 1000 1000 | OK |
 | Table 4 | original rerun: lambdas chosen per permutation = archive | True | OK |
 | Table 4 | archive: lambda chosen by GCV for the observed data | 0 0 0 0 0 | OK |
 | Fig 3C | mean chosen lambda GCV, LOOCV (paper text in brackets) | -9.706 (-9.867), -10.023 (-10.023) | OK |

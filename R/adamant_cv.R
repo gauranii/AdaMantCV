@@ -13,6 +13,17 @@
 # Source:  R_adaMantCV.R (Feb 2022).
 # -----------------------------------------------------------------------------
 
+# The two methods (argument `method` of adamant_cv()):
+# "original" repeats the code that made the paper: per-penalty p-value
+#   1 - percent rank (ties broken by rounding), final p-value by the
+#   dplyr 0.8.5 running sum (0.050 can come out above 0.05), and the GCV and
+#   LOOCV quirks of ridge_cv(variant = "feb2022").
+# "paper" is the method as written in the paper (Section 2, AdaMantCV
+#   algorithm): P(b) = #{c : T(c) >= T(b)} / (B + 1) with ties counted, the
+#   gamma p-value of a point mass is 1, P_CV = #{b : P(b) <= P(0)} / (B + 1)
+#   counted exactly, and every permutation is scored by GCV and LOOCV on its
+#   own response with the true smoother (ridge_cv(variant = "paper")).
+
 # Percent rank as computed by the C++ "hybrid" evaluation of dplyr 0.8.5, which
 # the original runs used for the final adaptive p-value: each distinct value,
 # in ascending order, gets the running sum of (number of ties) / (m - 1). The
@@ -31,8 +42,19 @@ percent_rank_cumulative <- function(x) {
 # Row 1 of every per-permutation result is the observed data.
 # exact = TRUE computes every statistic in the original operation order (bit
 # for bit); FALSE is the faster matrix form (differences near 1e-14).
+# method = "original" (default, the code behind the paper) or "paper" (the
+#   method as the paper states it), as described above.
+# replay_lambda0 (original method only): c(perms_below = , gamma = ), the
+#   OBSERVED data at lambda = 0 as another machine rounded them: the number of
+#   permuted statistics below the observed one (the permutation p-value is
+#   then computed here as 1 - perms_below / B, the same arithmetic as the
+#   original) and the gamma p-value. At
+#   lambda = 0 with n < p these are set by rounding alone (README note 1), so
+#   this is the only way to repeat the 2022 cluster numbers on other hardware.
 adamant_cv <- function(X, Y, q, n_negative, n_positive, n_perms, seed,
-                       upper = 1000, exact = TRUE) {
+                       upper = 1000, exact = TRUE, method = c("original", "paper"),
+                       replay_lambda0 = NULL) {
+  method <- match.arg(method)
   X <- as.matrix(X)
   Y <- as.matrix(Y)
   n <- nrow(X)
@@ -48,15 +70,26 @@ adamant_cv <- function(X, Y, q, n_negative, n_positive, n_perms, seed,
 
   statistics <- mantel_statistics(Z, ridge_weights(X_svd$d_tilde, lambdas),
                                   lambdas, exact)
-  p_perm <- permutation_pvalues(statistics)
-  p_gamma <- gamma_pvalues(statistics)
-  cv <- ridge_cv(X, Y_perm, lambdas, variant = "feb2022")
+  p_perm <- permutation_pvalues(statistics, method)
+  p_gamma <- gamma_pvalues(statistics, method = method)
+  if (!is.null(replay_lambda0)) {
+    stopifnot(method == "original")
+    p_perm[1, lambdas == 0] <- 1 - replay_lambda0[["perms_below"]] / n_perms
+    p_gamma[1, lambdas == 0] <- replay_lambda0[["gamma"]]
+  }
+  cv <- ridge_cv(X, Y_perm, lambdas,
+                 variant = if (method == "paper") "paper" else "feb2022")
 
   rows <- seq_len(n_perms + 1)
   best_gcv <- apply(cv$gcv, 1, which.min)
   best_loo <- apply(cv$loo, 1, which.min)
   adaptive <- function(pvalues, best) {
-    percent_rank_cumulative(pvalues[cbind(rows, best)])[1]
+    chosen <- pvalues[cbind(rows, best)]
+    if (method == "paper") {
+      # P_CV = #{b : P(b) <= P(0)} / (B + 1), counted exactly
+      return(sum(chosen <= chosen[1] * (1 + TIE_TOLERANCE)) / length(chosen))
+    }
+    percent_rank_cumulative(chosen)[1]
   }
   list(p_values = c(gcv = adaptive(p_perm, best_gcv),
                     loo = adaptive(p_perm, best_loo),

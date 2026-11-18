@@ -59,7 +59,8 @@ simulation_run <- function(design, run, q, sigma, n_negative, n_positive,
                            n_perms, seed, upper = 1000) {
   set.seed(10 * run + seed)
   Y <- design$X %*% design$beta + rnorm(nrow(design$X), mean = 0, sd = sigma)
-  adamant_cv(design$X, Y, q, n_negative, n_positive, n_perms, seed, upper)
+  adamant_cv(design$X, Y, q, n_negative, n_positive, n_perms, seed, upper,
+             method = METHOD)
 }
 
 # Run the replications asked for in `opts` (runs, scenarios, perms, negative,

@@ -11,6 +11,7 @@
 # Outputs: results/fig3_lambdas_<settings>.csv, figures/fig3{a,b,c,d}_lambda_hist.pdf.
 # Usage:   Rscript scripts/fig3_lambda_hist.R [--perms=1000] [--negative=50]
 #          [--positive=200] [--cores=4]
+#          --method=paper: the method as the paper states it (README).
 # Source:  run0204b (T1_summary_*, P_summary_* of scenarios 11, 14, 17 and
 #          29, 32, 35), R_Lambda.R (hist2, hist4).
 # -----------------------------------------------------------------------------
@@ -25,7 +26,8 @@ PANELS <- data.frame(panel = c("a", "b", "c", "d"),
                      beta_type = c("zero", "zero", "fixed", "fixed"),
                      tau = c("Q1", "Q2", "Q1", "Q2"))
 
-opts <- parse_args(list(perms = N_PERMS, negative = 50, positive = 200, cores = 4))
+opts <- parse_args(list(method = "original",
+                        perms = N_PERMS, negative = 50, positive = 200, cores = 4))
 
 # Penalty chosen by GCV and LOOCV for the observed data (b = 1) and every
 # permutation of one replication, for each row of PANELS.

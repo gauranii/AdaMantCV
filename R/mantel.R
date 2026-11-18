@@ -61,15 +61,32 @@ mantel_statistics <- function(Z, weights, lambdas, exact = FALSE) {
   statistics
 }
 
+# Relative tolerance below which two statistics count as equal (a tie) in the
+# "paper" method. Rounding differences are near 1e-15 relative; real ones are
+# far larger than 1e-8.
+TIE_TOLERANCE <- sqrt(.Machine$double.eps)
+
 # Permutation p-value of every data set within each penalty.
-permutation_pvalues <- function(statistics) {
-  1 - apply(statistics, 2, percent_rank)
+# method = "original": 1 - percent rank, as the original code (ties at
+#   lambda = 0 are broken by rounding).
+# method = "paper": the formula of the paper, P(b) = #{c : T(c) >= T(b)} / (B + 1)
+#   over c = 0, ..., B, with values within TIE_TOLERANCE counted as ties.
+permutation_pvalues <- function(statistics, method = c("original", "paper")) {
+  if (match.arg(method) == "original") return(1 - apply(statistics, 2, percent_rank))
+  apply(statistics, 2, function(t) {
+    sorted <- sort(t)
+    below <- findInterval(t - TIE_TOLERANCE * abs(t), sorted, left.open = TRUE)
+    (length(t) - below) / length(t)
+  })
 }
 
-# Same as permutation_pvalues(statistics)[1, ], for the observed data only.
-observed_pvalues <- function(statistics) {
-  below <- statistics < rep(statistics[1, ], each = nrow(statistics))
-  1 - colSums(below) / (nrow(statistics) - 1)
+# Same as permutation_pvalues(statistics, method)[1, ], for the observed data only.
+observed_pvalues <- function(statistics, method = c("original", "paper")) {
+  observed <- rep(statistics[1, ], each = nrow(statistics))
+  if (match.arg(method) == "paper") {
+    return(colSums(statistics >= observed - TIE_TOLERANCE * abs(observed)) / nrow(statistics))
+  }
+  1 - colSums(statistics < observed) / (nrow(statistics) - 1)
 }
 
 # Gamma approximation of the permutation distribution of each column. Shape
@@ -77,10 +94,18 @@ observed_pvalues <- function(statistics) {
 # 2 onwards); p-values are returned for the rows in `rows`.
 # na.rm = TRUE is kept from the original although nothing is missing: var()
 # takes a different code path with it and rounds differently.
-gamma_pvalues <- function(statistics, rows = seq_len(nrow(statistics))) {
+# method = "paper": where the permuted statistics are all equal (relative
+# spread below TIE_TOLERANCE, as at lambda = 0 when n < p) the null
+# distribution is a point mass and P(T >= t) = 1.
+gamma_pvalues <- function(statistics, rows = seq_len(nrow(statistics)),
+                          method = c("original", "paper")) {
   center <- apply(statistics[-1, , drop = FALSE], 2, mean, na.rm = TRUE)
   spread <- apply(statistics[-1, , drop = FALSE], 2, var, na.rm = TRUE)
-  pgamma(statistics[rows, , drop = FALSE],
-         shape = rep(center^2 / spread, each = length(rows)),
-         rate = rep(center / spread, each = length(rows)), lower.tail = FALSE)
+  p <- pgamma(statistics[rows, , drop = FALSE],
+              shape = rep(center^2 / spread, each = length(rows)),
+              rate = rep(center / spread, each = length(rows)), lower.tail = FALSE)
+  if (match.arg(method) == "paper") {
+    p[, sqrt(spread) <= TIE_TOLERANCE * abs(center)] <- 1
+  }
+  p
 }

@@ -11,6 +11,7 @@
 #          (shared with Figs 5 to 8), figures/fig8_{power,gcv}_<k>.pdf.
 # Usage:   Rscript scripts/fig8_power_gcv_increasing.R [--runs=1000] [--perms=1000] [--negative=500]
 #          [--positive=2000] [--cores=4]
+#          --method=paper: the method as the paper states it (README).
 # Source:  R_Output_plots.R (point1), GCV_plots.R / Output_plots.R (GCV);
 #          EEG_t184.R, RPC_fcns.R (the curves).
 # -----------------------------------------------------------------------------
@@ -25,7 +26,8 @@ GCV_WINDOWS <- data.frame(triple = c(191, 184, 160),
                           last   = c(650, 650, 650),
                           y_max  = c(16, 15.3, 21.6625))
 
-opts <- parse_args(list(runs = 1000L, perms = N_PERMS, negative = EEG_GRID$negative,
+opts <- parse_args(list(method = "original",
+                        runs = 1000L, perms = N_PERMS, negative = EEG_GRID$negative,
                         positive = EEG_GRID$positive, cores = 4))
 
 save_power_gcv_panels("fig8", GCV_WINDOWS, opts)

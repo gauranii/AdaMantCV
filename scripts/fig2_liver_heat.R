@@ -11,6 +11,7 @@
 #          figures/fig2{a_logp,b_power}_liver_heat.pdf.
 # Usage:   Rscript scripts/fig2_liver_heat.R [--runs=1000] [--perms=1000] [--negative=50]
 #          [--positive=250] [--cores=4]
+#          --method=paper: the method as the paper states it (README).
 # Source:  laptop_coh10: RPC_read.R, RPC_init.R, RPC_fcns.R, R_Heat3.R.
 # -----------------------------------------------------------------------------
 
@@ -21,7 +22,8 @@ MIDPOINT_POWER <- 0.5  # white point of the colour scale, panel B
 LAMBDA_DIGITS  <- 1
 AXIS_TEXT_SIZE <- 8
 
-opts <- parse_args(list(runs = 1000L, perms = N_PERMS, negative = LIVER_GRID$negative,
+opts <- parse_args(list(method = "original",
+                        runs = 1000L, perms = N_PERMS, negative = LIVER_GRID$negative,
                         positive = LIVER_GRID$positive, cores = 4))
 
 curves <- liver_curves(opts)

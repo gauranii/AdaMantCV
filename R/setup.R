@@ -45,12 +45,22 @@ output_path <- function(folder, name) {
 }
 
 results_path <- function(name) output_path("results", name)
-figures_path <- function(name) output_path("figures", name)
+# Figures of the "paper" method get the suffix _paper (see parse_args()).
+figures_path <- function(name) {
+  if (METHOD == "paper") name <- sub("[.]pdf$", "_paper.pdf", name)
+  output_path("figures", name)
+}
 
 # ----- Command line -----
 
+# Method of every computation (see R/adamant_cv.R): "original" (default, the
+# code that made the paper) or "paper" (the method as the paper states it).
+# Scripts set it with --method=paper; parse_args() stores it here.
+METHOD <- "original"
+
 # Read `--name=value` arguments. `defaults` is a named list; each value given
-# on the command line is converted to the type of its default.
+# on the command line is converted to the type of its default. A `method`
+# entry also sets METHOD.
 parse_args <- function(defaults, args = commandArgs(trailingOnly = TRUE)) {
   pairs <- regmatches(args, regexec("^--([a-z_]+)=(.*)$", args))
   if (any(lengths(pairs) != 3)) stop("arguments must look like --name=value")
@@ -58,6 +68,10 @@ parse_args <- function(defaults, args = commandArgs(trailingOnly = TRUE)) {
     name <- pair[2]
     if (!name %in% names(defaults)) stop("unknown argument --", name)
     defaults[[name]] <- methods::as(pair[3], class(defaults[[name]]))
+  }
+  if (!is.null(defaults$method)) {
+    stopifnot(defaults$method %in% c("original", "paper"))
+    METHOD <<- defaults$method
   }
   defaults
 }
@@ -77,7 +91,8 @@ parse_index_set <- function(text, count = FALSE) {
 # that reduced test runs never overwrite or pass for full runs.
 settings_tag <- function(opts, n_runs = NULL) {
   runs <- if (is.null(n_runs)) "" else sprintf("runs%d_", n_runs)
-  sprintf("%sperms%d_grid%dx%d", runs, opts$perms, opts$negative, opts$positive)
+  method <- if (METHOD == "paper") "paper_" else ""
+  sprintf("%s%sperms%d_grid%dx%d", method, runs, opts$perms, opts$negative, opts$positive)
 }
 
 # Read a result from `file` if it exists; otherwise compute it and store it.

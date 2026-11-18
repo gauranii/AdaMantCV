@@ -12,12 +12,14 @@
 #          [--negative=50] [--positive=200] [--cores=4]
 #          --runs: N (runs 1 to N), a:b or a comma list; finished runs are kept.
 #          --scenarios: original scenario numbers, a:b or a comma list.
+#          --method=paper: the method as the paper states it (README).
 # Source:  run0204b: R_power.R, R_driver.R (driver_power, scenarios 20 to 36).
 # -----------------------------------------------------------------------------
 
 source("R/setup.R")
 
-opts <- parse_args(list(runs = "500", scenarios = "all", perms = N_PERMS,
+opts <- parse_args(list(method = "original",
+                        runs = "500", scenarios = "all", perms = N_PERMS,
                         negative = 50, positive = 200, cores = 4))
 
 simulation_study("table2_power_fixed", beta_type = "fixed", opts)
