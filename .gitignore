@@ -56,7 +56,8 @@ po/*~
 # RStudio Connect folder
 rsconnect/
 
-# Inputs and generated outputs of the paper scripts
-/data/
+# Subject-level data and generated outputs of the paper scripts
+/data/eeg/
 /results/
 /figures/
+/result

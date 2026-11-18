@@ -7,18 +7,20 @@
 #          permutations of one simulated data set (replication 500, compound
 #          symmetric covariance, p = 1000), under beta = 0 (A, B) and beta = 1
 #          (C, D), with tau = Q1 (A, C) and tau = Q2 (B, D).
-# Inputs:  None (simulated data).
-# Outputs: results/fig3_lambdas_<settings>.csv, figures/fig3{a,b,c,d}_lambda_hist.pdf.
-# Usage:   Rscript scripts/fig3_lambda_hist.R [--perms=1000] [--negative=50]
+# Inputs:  archive/run0204b/fig3_lambdas.csv (chosen penalties of the archived
+#          run); none with --rerun (simulated data).
+# Outputs: figures/fig3{a,b,c,d}_lambda_hist.pdf;
+#          with --rerun also results/fig3_lambdas_<settings>.csv.
+# Usage:   Rscript scripts/fig3_lambda_hist.R [--rerun] [--perms=1000] [--negative=50]
 #          [--positive=200] [--cores=4]
-#          --method=paper: the method as the paper states it (README).
+#          --rerun: simulate the data and choose the penalties here.
 # Source:  run0204b (T1_summary_*, P_summary_* of scenarios 11, 14, 17 and
 #          29, 32, 35), R_Lambda.R (hist2, hist4).
 # -----------------------------------------------------------------------------
 
 source("R/setup.R")
 
-REPLICATION <- 500     # the last replication, the one whose lambdas were saved
+REPLICATION <- 500     # the replication shown
 DIMENSION   <- 1000
 COVARIANCE  <- "CSYM"
 BIN_WIDTH   <- 0.25
@@ -26,8 +28,7 @@ PANELS <- data.frame(panel = c("a", "b", "c", "d"),
                      beta_type = c("zero", "zero", "fixed", "fixed"),
                      tau = c("Q1", "Q2", "Q1", "Q2"))
 
-opts <- parse_args(list(method = "original",
-                        perms = N_PERMS, negative = 50, positive = 200, cores = 4))
+opts <- parse_args(list(perms = N_PERMS, negative = 50, positive = 200, cores = 4))
 
 # Penalty chosen by GCV and LOOCV for the observed data (b = 1) and every
 # permutation of one replication, for each row of PANELS.
@@ -46,10 +47,13 @@ chosen_lambdas <- function() {
   do.call(rbind, chosen)
 }
 
-lambdas <- cached_csv(results_path(sprintf("fig3_lambdas_%s.csv", settings_tag(opts))),
-                      chosen_lambdas)
+lambdas <- if (opts$rerun) {
+  cached_csv(results_path(sprintf("fig3_lambdas_%s.csv", settings_tag(opts))), chosen_lambdas)
+} else {
+  read.csv(archive_path("run0204b", "fig3_lambdas.csv"))
+}
 
-# The observed data (b = 1) are left out, as in the published figure.
+# The histograms show the permutations (b = 1 is the observed data).
 lambdas <- lambdas[lambdas$b >= 2, ]
 
 for (i in seq_len(nrow(PANELS))) {

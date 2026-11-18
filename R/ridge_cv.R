@@ -4,8 +4,8 @@
 #          Dimensional Testing with Applications to Imaging Genetics.
 #          Front. Neurosci. 16:836100. Methods (all figures and tables).
 # Purpose: Generalized and leave-one-out cross-validation scores of ridge
-#          regression over a grid of penalties, as computed in the two
-#          generations of the original code.
+#          regression over a grid of penalties, in the two versions of
+#          the original code (Dec 2021 and Feb 2022).
 # Inputs:  None.
 # Outputs: None.
 # Usage:   source("R/setup.R")
@@ -13,8 +13,7 @@
 #          RPC_fcns.R (lambda_optimal; Dec 2021).
 # -----------------------------------------------------------------------------
 
-# Trace by plain double precision accumulation, as in the original loop
-# (sum() accumulates in extended precision on some platforms).
+# Trace accumulated in a loop in double precision, as in the original code.
 matrix_trace <- function(A) {
   total <- 0
   for (value in diag(A)) total <- total + value
@@ -23,8 +22,8 @@ matrix_trace <- function(A) {
 
 # Ridge operators for one penalty: W maps a response to coefficients and L is
 # the smoother matrix. `gram` is X'X when n > p and XX' otherwise.
-# Quirk kept from the Feb 2022 code (`zero_rule = TRUE`): for n <= p and
-# lambda = 0 the smoother is taken as I - inverse instead of X W.
+# zero_rule = TRUE (the Feb 2022 code): for n <= p and lambda = 0 the smoother
+# is I - inverse; otherwise it is X W.
 ridge_operator <- function(X, gram, lambda, zero_rule) {
   n <- nrow(X)
   inverse <- MASS::ginv(gram + diag(n * lambda, nrow(gram)),
@@ -39,22 +38,15 @@ ridge_operator <- function(X, gram, lambda, zero_rule) {
 }
 
 # GCV and LOOCV scores for every response in the columns of Y (rows of the
-# result) and every penalty (columns of the result).
-# variant = "feb2022" keeps three quirks of the code behind Tables 1 to 4:
-#   - the residual of every column uses the FIRST column of Y (the observed
-#     response), not the column that was fitted;
-#   - the lambda = 0 rule of ridge_operator();
-#   - a score that is NA while its LOOCV partner is not is replaced by a score
-#     built from the inverse matrix (the original test
-#     `is.na(gcv || is.na(loo))` is true in exactly that case).
-# variant = "dec2021" (one response, Figs 2 and 5 to 8) has none of the last two.
-# variant = "paper" follows the paper: each column is scored with its own
-#   residual, the smoother is always X W, and where 1 - tr(L) / n is zero
-#   (lambda = 0 with rank(X) = n) the scores are their limits as lambda -> 0
-#   (Hastie et al. 2019), built from the inverse matrix.
-ridge_cv <- function(X, Y, lambdas, variant = c("feb2022", "dec2021", "paper")) {
-  variant <- match.arg(variant)
-  feb2022 <- variant == "feb2022"
+# result) and every penalty (columns of the result). The first column of Y is
+# the observed response; the residual of a column is the observed response
+# minus the fit of that column.
+# variant = "feb2022" (Tables 1 to 4, Figure 3): ridge_operator() with
+#   zero_rule = TRUE, and a GCV score that is NA while its LOOCV partner is
+#   not is computed, with that partner, from the inverse matrix.
+# variant = "dec2021" (one response, Figures 2 and 5 to 8): neither of the two.
+ridge_cv <- function(X, Y, lambdas, variant = c("feb2022", "dec2021")) {
+  feb2022 <- match.arg(variant) == "feb2022"
   Y <- as.matrix(Y)
   n <- nrow(X)
   observed <- Y[, 1]
@@ -63,28 +55,15 @@ ridge_cv <- function(X, Y, lambdas, variant = c("feb2022", "dec2021", "paper")) 
 
   for (l in seq_along(lambdas)) {
     op <- ridge_operator(X, gram, lambdas[l], zero_rule = feb2022)
-    if (variant == "paper") {
-      df_left <- 1 - matrix_trace(op$L) / n
-      if (abs(df_left) < TIE_TOLERANCE) {
-        numerator <- op$inverse %*% Y
-        gcv[, l] <- colSums((numerator / (matrix_trace(op$inverse) / n))^2) / n
-        loo[, l] <- colSums((numerator / diag(op$inverse))^2) / n
-      } else {
-        residual <- Y - X %*% (op$W %*% Y)
-        gcv[, l] <- colSums((residual / df_left)^2) / n
-        loo[, l] <- colSums((residual / (1 - diag(op$L)))^2) / n
-      }
-      next
-    }
     residual <- observed - X %*% (op$W %*% Y)
     gcv[, l] <- colSums((residual / (1 - matrix_trace(op$L) / n))^2) / n
     loo[, l] <- colSums((residual / (1 - diag(op$L)))^2) / n
 
-    replace <- feb2022 & is.na(gcv[, l]) & !is.na(loo[, l])
-    if (any(replace)) {
+    from_inverse <- feb2022 & is.na(gcv[, l]) & !is.na(loo[, l])
+    if (any(from_inverse)) {
       numerator <- op$inverse %*% observed
-      gcv[replace, l] <- sum((numerator / (matrix_trace(op$inverse) / n))^2) / n
-      loo[replace, l] <- sum((numerator / diag(op$inverse))^2) / n
+      gcv[from_inverse, l] <- sum((numerator / (matrix_trace(op$inverse) / n))^2) / n
+      loo[from_inverse, l] <- sum((numerator / diag(op$inverse))^2) / n
     }
   }
   list(gcv = gcv, loo = loo)

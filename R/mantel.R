@@ -14,7 +14,7 @@
 
 # Fraction of values strictly below each value (dplyr::percent_rank).
 percent_rank <- function(x) {
-  (rank(x, ties.method = "min") - 1) / (length(x) - 1)
+  (match(x, sort(x)) - 1) / (length(x) - 1)
 }
 
 # SVD of X with the singular values below their q-th quantile set to zero.
@@ -48,64 +48,38 @@ ridge_weights <- function(d_tilde, lambdas) {
 
 # Statistic T[b, l] = sum(weights[, l] * Z[, b]^2) for every data set b (the
 # columns of Z, observed data first) and every penalty l.
-# At lambda = 0 the statistic equals ||Y||^2 for every permutation in exact
-# arithmetic when U is square, so its ranks come from rounding. That column is
-# therefore computed one permutation at a time, exactly as the original code
-# did. `exact = TRUE` computes every column that way.
+# exact = FALSE uses one matrix product. exact = TRUE computes every statistic
+# as its own inner product, in the operation order of the original code; the
+# column of lambda = 0 is always computed that way.
 mantel_statistics <- function(Z, weights, lambdas, exact = FALSE) {
   statistics <- crossprod(Z^2, weights)
-  original_form <- if (exact) seq_along(lambdas) else which(lambdas == 0)
-  for (l in original_form) {
+  original_order <- if (exact) seq_along(lambdas) else which(lambdas == 0)
+  for (l in original_order) {
     statistics[, l] <- apply(Z, 2, function(z) crossprod(weights[, l], z^2))
   }
   statistics
 }
 
-# Relative tolerance below which two statistics count as equal (a tie) in the
-# "paper" method. Rounding differences are near 1e-15 relative; real ones are
-# far larger than 1e-8.
-TIE_TOLERANCE <- sqrt(.Machine$double.eps)
-
-# Permutation p-value of every data set within each penalty.
-# method = "original": 1 - percent rank, as the original code (ties at
-#   lambda = 0 are broken by rounding).
-# method = "paper": the formula of the paper, P(b) = #{c : T(c) >= T(b)} / (B + 1)
-#   over c = 0, ..., B, with values within TIE_TOLERANCE counted as ties.
-permutation_pvalues <- function(statistics, method = c("original", "paper")) {
-  if (match.arg(method) == "original") return(1 - apply(statistics, 2, percent_rank))
-  apply(statistics, 2, function(t) {
-    sorted <- sort(t)
-    below <- findInterval(t - TIE_TOLERANCE * abs(t), sorted, left.open = TRUE)
-    (length(t) - below) / length(t)
-  })
+# Permutation p-value of every data set within each penalty: one minus the
+# fraction of statistics strictly below its own.
+permutation_pvalues <- function(statistics) {
+  1 - apply(statistics, 2, percent_rank)
 }
 
-# Same as permutation_pvalues(statistics, method)[1, ], for the observed data only.
-observed_pvalues <- function(statistics, method = c("original", "paper")) {
+# Same as permutation_pvalues(statistics)[1, ], for the observed data only.
+observed_pvalues <- function(statistics) {
   observed <- rep(statistics[1, ], each = nrow(statistics))
-  if (match.arg(method) == "paper") {
-    return(colSums(statistics >= observed - TIE_TOLERANCE * abs(observed)) / nrow(statistics))
-  }
   1 - colSums(statistics < observed) / (nrow(statistics) - 1)
 }
 
 # Gamma approximation of the permutation distribution of each column. Shape
 # and rate come from the mean and variance of the permuted statistics (rows
 # 2 onwards); p-values are returned for the rows in `rows`.
-# na.rm = TRUE is kept from the original although nothing is missing: var()
-# takes a different code path with it and rounds differently.
-# method = "paper": where the permuted statistics are all equal (relative
-# spread below TIE_TOLERANCE, as at lambda = 0 when n < p) the null
-# distribution is a point mass and P(T >= t) = 1.
-gamma_pvalues <- function(statistics, rows = seq_len(nrow(statistics)),
-                          method = c("original", "paper")) {
+# mean() and var() are called with na.rm = TRUE, as in the original code.
+gamma_pvalues <- function(statistics, rows = seq_len(nrow(statistics))) {
   center <- apply(statistics[-1, , drop = FALSE], 2, mean, na.rm = TRUE)
   spread <- apply(statistics[-1, , drop = FALSE], 2, var, na.rm = TRUE)
-  p <- pgamma(statistics[rows, , drop = FALSE],
-              shape = rep(center^2 / spread, each = length(rows)),
-              rate = rep(center / spread, each = length(rows)), lower.tail = FALSE)
-  if (match.arg(method) == "paper") {
-    p[, sqrt(spread) <= TIE_TOLERANCE * abs(center)] <- 1
-  }
-  p
+  pgamma(statistics[rows, , drop = FALSE],
+         shape = rep(center^2 / spread, each = length(rows)),
+         rate = rep(center / spread, each = length(rows)), lower.tail = FALSE)
 }

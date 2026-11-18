@@ -1,52 +1,81 @@
-# Check results (2026-11-18)
+# Check results
 
-Written by `checks/run_checks.sh`. "differs" is not always a failure: the
-README explains each expected difference.
+Written by `checks/run_checks.sh`: the outputs of the scripts in `scripts/`
+(run with their defaults) compared with the paper by code.
 
-## 1. Archived run outputs against the paper
+## Tables 1 to 4
 
-```
-archive vs paper: 164/164 cells equal (3 decimals)
-Tables 1-3 from the 500 per-run p-values: 144/144 with p < 0.05, 106/144 with p <= 0.05
-```
+Every cell is compared with the number printed in the paper
+(`checks/paper_values.csv`). Each cell below reads paper / computed, in the
+order GCV, LOOCV, gamma GCV, gamma LOOCV.
 
-## 2. Rebuilt functions against the original functions (same inputs and seeds)
+### Table 1: 48 of 48 cells equal
 
-25 of 25 checks OK.
+| Row | GCV | LOOCV | gamma GCV | gamma LOOCV | Check |
+|---|---|---|---|---|---|
+| CS, p = 500, tau = none | 0.042 / 0.042 | 0.042 / 0.042 | 0.036 / 0.036 | 0.036 / 0.036 | OK |
+| CS, p = 500, tau = Q1 | 0.030 / 0.030 | 0.028 / 0.028 | 0.032 / 0.032 | 0.028 / 0.028 | OK |
+| CS, p = 500, tau = Q2 | 0.048 / 0.048 | 0.050 / 0.050 | 0.052 / 0.052 | 0.052 / 0.052 | OK |
+| CS, p = 1000, tau = none | 0.048 / 0.048 | 0.048 / 0.048 | 0.038 / 0.038 | 0.038 / 0.038 | OK |
+| CS, p = 1000, tau = Q1 | 0.044 / 0.044 | 0.044 / 0.044 | 0.042 / 0.042 | 0.042 / 0.042 | OK |
+| CS, p = 1000, tau = Q2 | 0.036 / 0.036 | 0.036 / 0.036 | 0.036 / 0.036 | 0.036 / 0.036 | OK |
+| Heteroskedastic, p = 500, tau = none | 0.038 / 0.038 | 0.038 / 0.038 | 0.038 / 0.038 | 0.038 / 0.038 | OK |
+| Heteroskedastic, p = 500, tau = Q1 | 0.026 / 0.026 | 0.026 / 0.026 | 0.028 / 0.028 | 0.028 / 0.028 | OK |
+| Heteroskedastic, p = 500, tau = Q2 | 0.046 / 0.046 | 0.046 / 0.046 | 0.050 / 0.050 | 0.050 / 0.050 | OK |
+| Heteroskedastic, p = 1000, tau = none | 0.050 / 0.050 | 0.050 / 0.050 | 0.040 / 0.040 | 0.040 / 0.040 | OK |
+| Heteroskedastic, p = 1000, tau = Q1 | 0.046 / 0.046 | 0.046 / 0.046 | 0.046 / 0.046 | 0.046 / 0.046 | OK |
+| Heteroskedastic, p = 1000, tau = Q2 | 0.040 / 0.040 | 0.040 / 0.040 | 0.038 / 0.038 | 0.038 / 0.038 | OK |
 
-| what | n | max_abs_diff | tolerance | ok |
-|---|---|---|---|---|
-| adamant_cv triple 11, q = 0.25, 100 perms: lambda grid | 250 | 0 | 0 | OK |
-| adamant_cv triple 11, q = 0.25, 100 perms: GCV scores (relative; absolute below 1e-12) | 25250 | 1.20581111762164e-09 | 1e-08 | OK |
-| adamant_cv triple 11, q = 0.25, 100 perms: LOOCV scores (relative; absolute below 1e-12) | 25250 | 1.20579235485252e-09 | 1e-08 | OK |
-| adamant_cv triple 11, q = 0.25, 100 perms: chosen lambdas GCV, LOO | 202 | 0 | 0 | OK |
-| adamant_cv triple 11, q = 0.25, 100 perms: p-values (4) | 4 | 5.55111512312578e-16 | 1e-12 | OK |
-| adamant_cv triple 11, q = 0.50, 100 perms: lambda grid | 250 | 0 | 0 | OK |
-| adamant_cv triple 11, q = 0.50, 100 perms: GCV scores (relative; absolute below 1e-12) | 25250 | 1.20581111762164e-09 | 1e-08 | OK |
-| adamant_cv triple 11, q = 0.50, 100 perms: LOOCV scores (relative; absolute below 1e-12) | 25250 | 1.20579235485252e-09 | 1e-08 | OK |
-| adamant_cv triple 11, q = 0.50, 100 perms: chosen lambdas GCV, LOO | 202 | 0 | 0 | OK |
-| adamant_cv triple 11, q = 0.50, 100 perms: p-values (4) | 4 | 4.44089209850063e-16 | 1e-12 | OK |
-| simulation CS p = 500 Q1, beta zero, runs 1-2, 30 perms: p-values | 8 | 2.77555756156289e-17 | 1e-12 | OK |
-| simulation CS p = 500 Q1, beta fixed, runs 1-2, 30 perms: p-values | 8 | 0 | 1e-12 | OK |
-| simulation CS p = 500 Q1, beta random, runs 1-2, 30 perms: p-values | 8 | 0 | 1e-12 | OK |
-| power curve eeg191, 3 runs, 30 perms: lambdas | 2500 | 0 | 0 | OK |
-| power curve eeg191: power | 2500 | 0 | 0 | OK |
-| power curve eeg191: power MOM | 2500 | 0 | 0 | OK |
-| power curve eeg191: permutation p-values (as mean -log10) | 2500 | 8.88178419700125e-16 | 1e-12 | OK |
-| GCV curve eeg191 (relative) | 2500 | 0 | 1e-10 | OK |
-| LOOCV curve eeg191 (relative) | 2500 | 0 | 1e-10 | OK |
-| power curve liver1, 3 runs, 30 perms: lambdas | 300 | 0 | 0 | OK |
-| power curve liver1: power | 300 | 0 | 0 | OK |
-| power curve liver1: power MOM | 300 | 0 | 0 | OK |
-| power curve liver1: permutation p-values (as mean -log10) | 300 | 8.88178419700125e-16 | 1e-12 | OK |
-| GCV curve liver1 (relative) | 300 | 0 | 1e-10 | OK |
-| LOOCV curve liver1 (relative) | 300 | 0 | 1e-10 | OK |
+### Table 2: 48 of 48 cells equal
 
-## 3. Published figures against the same figures redrawn from the archived data
+| Row | GCV | LOOCV | gamma GCV | gamma LOOCV | Check |
+|---|---|---|---|---|---|
+| CS, p = 500, tau = none | 0.062 / 0.062 | 0.062 / 0.062 | 0.104 / 0.104 | 0.104 / 0.104 | OK |
+| CS, p = 500, tau = Q1 | 0.342 / 0.342 | 0.290 / 0.290 | 0.378 / 0.378 | 0.326 / 0.326 | OK |
+| CS, p = 500, tau = Q2 | 0.348 / 0.348 | 0.288 / 0.288 | 0.382 / 0.382 | 0.324 / 0.324 | OK |
+| CS, p = 1000, tau = none | 0.998 / 0.998 | 0.998 / 0.998 | 0.998 / 0.998 | 0.998 / 0.998 | OK |
+| CS, p = 1000, tau = Q1 | 1.000 / 1.000 | 1.000 / 1.000 | 1.000 / 1.000 | 1.000 / 1.000 | OK |
+| CS, p = 1000, tau = Q2 | 1.000 / 1.000 | 1.000 / 1.000 | 1.000 / 1.000 | 1.000 / 1.000 | OK |
+| Heteroskedastic, p = 500, tau = none | 0.064 / 0.064 | 0.064 / 0.064 | 0.178 / 0.178 | 0.178 / 0.178 | OK |
+| Heteroskedastic, p = 500, tau = Q1 | 0.074 / 0.074 | 0.072 / 0.072 | 0.186 / 0.186 | 0.184 / 0.184 | OK |
+| Heteroskedastic, p = 500, tau = Q2 | 0.118 / 0.118 | 0.068 / 0.068 | 0.218 / 0.218 | 0.180 / 0.180 | OK |
+| Heteroskedastic, p = 1000, tau = none | 0.996 / 0.996 | 0.996 / 0.996 | 0.998 / 0.998 | 0.998 / 0.998 | OK |
+| Heteroskedastic, p = 1000, tau = Q1 | 1.000 / 1.000 | 1.000 / 1.000 | 1.000 / 1.000 | 1.000 / 1.000 | OK |
+| Heteroskedastic, p = 1000, tau = Q2 | 1.000 / 1.000 | 1.000 / 1.000 | 1.000 / 1.000 | 1.000 / 1.000 | OK |
 
-47 of 48 checks OK.
+### Table 3: 48 of 48 cells equal
 
-| figure | check | value | ok |
+| Row | GCV | LOOCV | gamma GCV | gamma LOOCV | Check |
+|---|---|---|---|---|---|
+| CS, p = 500, tau = none | 0.070 / 0.070 | 0.070 / 0.070 | 0.112 / 0.112 | 0.112 / 0.112 | OK |
+| CS, p = 500, tau = Q1 | 0.196 / 0.196 | 0.152 / 0.152 | 0.230 / 0.230 | 0.192 / 0.192 | OK |
+| CS, p = 500, tau = Q2 | 0.150 / 0.150 | 0.136 / 0.136 | 0.188 / 0.188 | 0.176 / 0.176 | OK |
+| CS, p = 1000, tau = none | 0.998 / 0.998 | 0.998 / 0.998 | 0.998 / 0.998 | 0.998 / 0.998 | OK |
+| CS, p = 1000, tau = Q1 | 1.000 / 1.000 | 1.000 / 1.000 | 1.000 / 1.000 | 1.000 / 1.000 | OK |
+| CS, p = 1000, tau = Q2 | 1.000 / 1.000 | 1.000 / 1.000 | 1.000 / 1.000 | 1.000 / 1.000 | OK |
+| Heteroskedastic, p = 500, tau = none | 0.092 / 0.092 | 0.092 / 0.092 | 0.268 / 0.268 | 0.268 / 0.268 | OK |
+| Heteroskedastic, p = 500, tau = Q1 | 0.084 / 0.084 | 0.092 / 0.092 | 0.266 / 0.266 | 0.268 / 0.268 | OK |
+| Heteroskedastic, p = 500, tau = Q2 | 0.088 / 0.088 | 0.092 / 0.092 | 0.268 / 0.268 | 0.268 / 0.268 | OK |
+| Heteroskedastic, p = 1000, tau = none | 0.996 / 0.996 | 0.996 / 0.996 | 0.996 / 0.996 | 0.996 / 0.996 | OK |
+| Heteroskedastic, p = 1000, tau = Q1 | 1.000 / 1.000 | 1.000 / 1.000 | 1.000 / 1.000 | 1.000 / 1.000 | OK |
+| Heteroskedastic, p = 1000, tau = Q2 | 1.000 / 1.000 | 1.000 / 1.000 | 1.000 / 1.000 | 1.000 / 1.000 | OK |
+
+### Table 4: 20 of 20 cells equal
+
+| Row | GCV | LOOCV | gamma GCV | gamma LOOCV | Check |
+|---|---|---|---|---|---|
+| Fp1 - T8, delta | 0.016 / 0.016 | 0.015 / 0.015 | 0.012 / 0.012 | 0.012 / 0.012 | OK |
+| CPz - F8, delta | 0.009 / 0.009 | 0.008 / 0.008 | 0.007 / 0.007 | 0.007 / 0.007 | OK |
+| FC5 - O2, delta | 0.004 / 0.004 | 0.003 / 0.003 | 0.005 / 0.005 | 0.004 / 0.004 | OK |
+| F3 - FC1, alpha | 0.037 / 0.037 | 0.038 / 0.038 | 0.006 / 0.006 | 0.007 / 0.007 | OK |
+| P4 - PO8, gamma | 0.034 / 0.034 | 0.034 / 0.034 | 0.014 / 0.014 | 0.015 / 0.015 | OK |
+
+## Figures 1 to 3 and 5 to 8
+
+Every figure is compared with the published file (`archive/figures/`) by the
+marks in the two PDF files. 30 of 30 checks OK.
+
+| Figure | Check | Value | Result |
 |---|---|---|---|
 | Fig 2A | tiles: count, largest colour difference (0-1) | 3000/3000, 0.0 | OK |
 | Fig 2A | row labels equal (ignoring case) | True | OK |
@@ -76,185 +105,5 @@ Tables 1-3 from the 500 per-run p-values: 144/144 with p < 0.05, 106/144 with p 
 | Fig 8 | GCV191: points, largest offset after scaling (pt) | 162, 0.009 | OK |
 | Fig 8 | GCV184: points, largest offset after scaling (pt) | 158, 0.008 | OK |
 | Fig 8 | GCV160: points, largest offset after scaling (pt) | 175, 0.008 | OK |
-| Fig 1A | blue minimum points vs rebuilt minima, largest offset (pt) | 10, 0.006 | OK |
-| Fig 1B | blue minimum points vs rebuilt minima, largest offset (pt) | 10, 14.888 | differs |
-| fig7_gcv_22 | GCV panel drawn from rebuilt table: points | 166 | OK |
-| fig7_gcv_223 | GCV panel drawn from rebuilt table: points | 275 | OK |
-| fig7_gcv_25 | GCV panel drawn from rebuilt table: points | 274 | OK |
-| fig7_power_22 | points vs rebuilt table, largest offset (pt) | 2500, 0.004 | OK |
-| fig7_power_223 | points vs rebuilt table, largest offset (pt) | 2500, 0.004 | OK |
-| fig7_power_25 | points vs rebuilt table, largest offset (pt) | 2500, 0.004 | OK |
-| fig8_gcv_160 | GCV panel drawn from rebuilt table: points | 175 | OK |
-| fig8_gcv_184 | GCV panel drawn from rebuilt table: points | 158 | OK |
-| fig8_gcv_191 | GCV panel drawn from rebuilt table: points | 162 | OK |
-| fig8_power_160 | points vs rebuilt table, largest offset (pt) | 2500, 0.006 | OK |
-| fig8_power_184 | points vs rebuilt table, largest offset (pt) | 2500, 0.004 | OK |
-| fig8_power_191 | points vs rebuilt table, largest offset (pt) | 2500, 0.004 | OK |
-| Fig 2A | rebuilt run vs published: tiles that differ (report only) | 2703 of 3000 | OK |
-| Fig 2B | rebuilt run vs published: tiles that differ (report only) | 10 of 3000 | OK |
-| Fig 5A | rebuilt run vs published: tiles that differ (report only) | 29517 of 30000 | OK |
-| Fig 5B | rebuilt run vs published: tiles that differ (report only) | 11 of 30000 | OK |
-| Fig 6A | rebuilt run vs published: tiles that differ (report only) | 23926 of 30000 | OK |
-| Fig 6B | rebuilt run vs published: tiles that differ (report only) | 12 of 30000 | OK |
-
-## 4. Rebuilt results against the archive and the paper
-
-154 of 154 checks OK.
-
-| item | check | value | ok |
-|---|---|---|---|
-| Fig 2 v1 | lambda grid, largest difference | 300, 1.0e-12 | OK |
-| Fig 2 v1 | GCV and LOOCV curves, largest relative difference | 5.6e-12 | OK |
-| Fig 2 v1 | power table (1000 runs) vs archive (1000 runs), lambda != 0 | 2.4e-14 | OK |
-| Fig 2 v1 | power at lambda = 0 (tied statistic), difference | 0.003 | OK |
-| Fig 2 v2 | lambda grid, largest difference | 300, 1.0e-12 | OK |
-| Fig 2 v2 | GCV and LOOCV curves, largest relative difference | 5.5e-12 | OK |
-| Fig 2 v2 | power table (1000 runs) vs archive (1000 runs), lambda != 0 | 1.0e-13 | OK |
-| Fig 2 v2 | power at lambda = 0 (tied statistic), difference | 0.001 | OK |
-| Fig 2 v3 | lambda grid, largest difference | 300, 1.0e-12 | OK |
-| Fig 2 v3 | GCV and LOOCV curves, largest relative difference | 4.8e-12 | OK |
-| Fig 2 v3 | power table (1000 runs) vs archive (1000 runs), lambda != 0 | 9.0e-14 | OK |
-| Fig 2 v3 | power at lambda = 0 (tied statistic), difference | 0.157 | OK |
-| Fig 2 v4 | lambda grid, largest difference | 300, 1.0e-12 | OK |
-| Fig 2 v4 | GCV and LOOCV curves, largest relative difference | 5.6e-12 | OK |
-| Fig 2 v4 | power table (1000 runs) vs archive (1000 runs), lambda != 0 | 7.3e-14 | OK |
-| Fig 2 v4 | power at lambda = 0 (tied statistic), difference | 0.498 | OK |
-| Fig 2 v5 | lambda grid, largest difference | 300, 1.0e-12 | OK |
-| Fig 2 v5 | GCV and LOOCV curves, largest relative difference | 5.5e-12 | OK |
-| Fig 2 v5 | power table (1000 runs) vs archive (1000 runs), lambda != 0 | 2.2e-14 | OK |
-| Fig 2 v5 | power at lambda = 0 (tied statistic), difference | 0.109 | OK |
-| Fig 2 v6 | lambda grid, largest difference | 300, 1.0e-12 | OK |
-| Fig 2 v6 | GCV and LOOCV curves, largest relative difference | 5.5e-12 | OK |
-| Fig 2 v6 | power table (1000 runs) vs archive (1000 runs), lambda != 0 | 7.4e-14 | OK |
-| Fig 2 v6 | power at lambda = 0 (tied statistic), difference | 0.001 | OK |
-| Fig 2 v7 | lambda grid, largest difference | 300, 1.0e-12 | OK |
-| Fig 2 v7 | GCV and LOOCV curves, largest relative difference | 5.5e-12 | OK |
-| Fig 2 v7 | power table (1000 runs) vs archive (1000 runs), lambda != 0 | 2.1e-14 | OK |
-| Fig 2 v7 | power at lambda = 0 (tied statistic), difference | 0.100 | OK |
-| Fig 2 v8 | lambda grid, largest difference | 300, 1.0e-12 | OK |
-| Fig 2 v8 | GCV and LOOCV curves, largest relative difference | 5.5e-12 | OK |
-| Fig 2 v8 | power table (1000 runs) vs archive (1000 runs), lambda != 0 | 1.7e-14 | OK |
-| Fig 2 v8 | power at lambda = 0 (tied statistic), difference | 0.001 | OK |
-| Fig 2 v9 | lambda grid, largest difference | 300, 1.0e-12 | OK |
-| Fig 2 v9 | GCV and LOOCV curves, largest relative difference | 5.5e-12 | OK |
-| Fig 2 v9 | power table (1000 runs) vs archive (1000 runs), lambda != 0 | 2.5e-14 | OK |
-| Fig 2 v9 | power at lambda = 0 (tied statistic), difference | 0.042 | OK |
-| Fig 2 v10 | lambda grid, largest difference | 300, 1.0e-12 | OK |
-| Fig 2 v10 | GCV and LOOCV curves, largest relative difference | 5.5e-12 | OK |
-| Fig 2 v10 | power table (1000 runs) vs archive (1000 runs), lambda != 0 | 2.0e-14 | OK |
-| Fig 2 v10 | power at lambda = 0 (tied statistic), difference | 0.197 | OK |
-| EEG 123 | lambda grid, largest difference | 2500, 1.0e-12 | OK |
-| EEG 123 | GCV and LOOCV curves, largest relative difference | 9.1e-08 | OK |
-| EEG 123 | power table (1000 runs) vs archive (1000 runs), lambda != 0 | 1.0e-14 | OK |
-| EEG 123 | power at lambda = 0 (tied statistic), difference | 0.037 | OK |
-| EEG 136 | lambda grid, largest difference | 2500, 1.0e-12 | OK |
-| EEG 136 | GCV and LOOCV curves, largest relative difference | 9.1e-08 | OK |
-| EEG 136 | power table (1000 runs) vs archive (1000 runs), lambda != 0 | 1.5e-14 | OK |
-| EEG 136 | power at lambda = 0 (tied statistic), difference | 0.234 | OK |
-| EEG 144 | lambda grid, largest difference | 2500, 1.0e-12 | OK |
-| EEG 144 | GCV and LOOCV curves, largest relative difference | 9.1e-08 | OK |
-| EEG 144 | power table (1000 runs) vs archive (1000 runs), lambda != 0 | 6.1e-15 | OK |
-| EEG 144 | power at lambda = 0 (tied statistic), difference | 0.012 | OK |
-| EEG 148 | lambda grid, largest difference | 2500, 1.0e-12 | OK |
-| EEG 148 | GCV and LOOCV curves, largest relative difference | 9.1e-08 | OK |
-| EEG 148 | power table (1000 runs) vs archive (1000 runs), lambda != 0 | 2.0e-14 | OK |
-| EEG 148 | power at lambda = 0 (tied statistic), difference | 0.005 | OK |
-| EEG 151 | lambda grid, largest difference | 2500, 1.0e-12 | OK |
-| EEG 151 | GCV and LOOCV curves, largest relative difference | 9.1e-08 | OK |
-| EEG 151 | power table (1000 runs) vs archive (1000 runs), lambda != 0 | 1.0e-14 | OK |
-| EEG 151 | power at lambda = 0 (tied statistic), difference | 0.018 | OK |
-| EEG 157 | lambda grid, largest difference | 2500, 1.0e-12 | OK |
-| EEG 157 | GCV and LOOCV curves, largest relative difference | 9.1e-08 | OK |
-| EEG 157 | power table (1000 runs) vs archive (1000 runs), lambda != 0 | 1.0e-14 | OK |
-| EEG 157 | power at lambda = 0 (tied statistic), difference | 0.007 | OK |
-| EEG 159 | lambda grid, largest difference | 2500, 1.0e-12 | OK |
-| EEG 159 | GCV and LOOCV curves, largest relative difference | 9.1e-08 | OK |
-| EEG 159 | power table (1000 runs) vs archive (1000 runs), lambda != 0 | 1.0e-14 | OK |
-| EEG 159 | power at lambda = 0 (tied statistic), difference | 0.001 | OK |
-| EEG 160 | lambda grid, largest difference | 2500, 1.0e-12 | OK |
-| EEG 160 | GCV and LOOCV curves, largest relative difference | 9.1e-08 | OK |
-| EEG 160 | power table (1000 runs) vs archive (1000 runs), lambda != 0 | 2.0e-14 | OK |
-| EEG 160 | power at lambda = 0 (tied statistic), difference | 0.052 | OK |
-| EEG 177 | lambda grid, largest difference | 2500, 1.0e-12 | OK |
-| EEG 177 | GCV and LOOCV curves, largest relative difference | 9.1e-08 | OK |
-| EEG 177 | power table (1000 runs) vs archive (1000 runs), lambda != 0 | 1.0e-14 | OK |
-| EEG 177 | power at lambda = 0 (tied statistic), difference | 0.000 | OK |
-| EEG 179 | lambda grid, largest difference | 2500, 1.0e-12 | OK |
-| EEG 179 | GCV and LOOCV curves, largest relative difference | 9.1e-08 | OK |
-| EEG 179 | power table (1000 runs) vs archive (1000 runs), lambda != 0 | 1.0e-14 | OK |
-| EEG 179 | power at lambda = 0 (tied statistic), difference | 0.042 | OK |
-| EEG 181 | lambda grid, largest difference | 2500, 1.0e-12 | OK |
-| EEG 181 | GCV and LOOCV curves, largest relative difference | 9.1e-08 | OK |
-| EEG 181 | power table (1000 runs) vs archive (1000 runs), lambda != 0 | 1.5e-14 | OK |
-| EEG 181 | power at lambda = 0 (tied statistic), difference | 0.001 | OK |
-| EEG 183 | lambda grid, largest difference | 2500, 1.0e-12 | OK |
-| EEG 183 | GCV and LOOCV curves, largest relative difference | 9.1e-08 | OK |
-| EEG 183 | power table (1000 runs) vs archive (1000 runs), lambda != 0 | 1.0e-14 | OK |
-| EEG 183 | power at lambda = 0 (tied statistic), difference | 0.023 | OK |
-| EEG 184 | lambda grid, largest difference | 2500, 1.0e-12 | OK |
-| EEG 184 | GCV and LOOCV curves, largest relative difference | 9.1e-08 | OK |
-| EEG 184 | power table (1000 runs) vs archive (1000 runs), lambda != 0 | 2.0e-14 | OK |
-| EEG 184 | power at lambda = 0 (tied statistic), difference | 0.013 | OK |
-| EEG 191 | lambda grid, largest difference | 2500, 1.0e-12 | OK |
-| EEG 191 | GCV and LOOCV curves, largest relative difference | 9.1e-08 | OK |
-| EEG 191 | power table (1000 runs) vs archive (1000 runs), lambda != 0 | 1.0e-14 | OK |
-| EEG 191 | power at lambda = 0 (tied statistic), difference | 0.131 | OK |
-| EEG 200 | lambda grid, largest difference | 2500, 1.0e-12 | OK |
-| EEG 200 | GCV and LOOCV curves, largest relative difference | 9.1e-08 | OK |
-| EEG 200 | power table (1000 runs) vs archive (1000 runs), lambda != 0 | 4.1e-15 | OK |
-| EEG 200 | power at lambda = 0 (tied statistic), difference | 0.002 | OK |
-| EEG 205 | lambda grid, largest difference | 2500, 1.0e-12 | OK |
-| EEG 205 | GCV and LOOCV curves, largest relative difference | 9.1e-08 | OK |
-| EEG 205 | power table (1000 runs) vs archive (1000 runs), lambda != 0 | 1.0e-14 | OK |
-| EEG 205 | power at lambda = 0 (tied statistic), difference | 0.157 | OK |
-| EEG 219 | lambda grid, largest difference | 2500, 1.0e-12 | OK |
-| EEG 219 | GCV and LOOCV curves, largest relative difference | 9.1e-08 | OK |
-| EEG 219 | power table (1000 runs) vs archive (1000 runs), lambda != 0 | 3.0e-14 | OK |
-| EEG 219 | power at lambda = 0 (tied statistic), difference | 0.017 | OK |
-| EEG 220 | lambda grid, largest difference | 2500, 1.0e-12 | OK |
-| EEG 220 | GCV and LOOCV curves, largest relative difference | 9.1e-08 | OK |
-| EEG 220 | power table (1000 runs) vs archive (1000 runs), lambda != 0 | 1.0e-14 | OK |
-| EEG 220 | power at lambda = 0 (tied statistic), difference | 0.105 | OK |
-| EEG 223 | lambda grid, largest difference | 2500, 1.0e-12 | OK |
-| EEG 223 | GCV and LOOCV curves, largest relative difference | 9.1e-08 | OK |
-| EEG 223 | power table (1000 runs) vs archive (1000 runs), lambda != 0 | 2.0e-14 | OK |
-| EEG 223 | power at lambda = 0 (tied statistic), difference | 0.041 | OK |
-| EEG 22 | lambda grid, largest difference | 2500, 1.0e-12 | OK |
-| EEG 22 | GCV and LOOCV curves, largest relative difference | 9.1e-08 | OK |
-| EEG 22 | power table (1000 runs) vs archive (1000 runs), lambda != 0 | 2.0e-14 | OK |
-| EEG 22 | power at lambda = 0 (tied statistic), difference | 0.021 | OK |
-| EEG 231 | lambda grid, largest difference | 2500, 1.0e-12 | OK |
-| EEG 231 | GCV and LOOCV curves, largest relative difference | 9.1e-08 | OK |
-| EEG 231 | power table (1000 runs) vs archive (1000 runs), lambda != 0 | 1.6e-14 | OK |
-| EEG 231 | power at lambda = 0 (tied statistic), difference | 0.009 | OK |
-| EEG 248 | lambda grid, largest difference | 2500, 1.0e-12 | OK |
-| EEG 248 | GCV and LOOCV curves, largest relative difference | 9.1e-08 | OK |
-| EEG 248 | power table (1000 runs) vs archive (1000 runs), lambda != 0 | 3.0e-14 | OK |
-| EEG 248 | power at lambda = 0 (tied statistic), difference | 0.105 | OK |
-| EEG 25 | lambda grid, largest difference | 2500, 1.0e-12 | OK |
-| EEG 25 | GCV and LOOCV curves, largest relative difference | 9.1e-08 | OK |
-| EEG 25 | power table (1000 runs) vs archive (1000 runs), lambda != 0 | 2.0e-14 | OK |
-| EEG 25 | power at lambda = 0 (tied statistic), difference | 0.165 | OK |
-| EEG 31 | lambda grid, largest difference | 2500, 1.0e-12 | OK |
-| EEG 31 | GCV and LOOCV curves, largest relative difference | 9.1e-08 | OK |
-| EEG 31 | power table (1000 runs) vs archive (1000 runs), lambda != 0 | 1.0e-14 | OK |
-| EEG 31 | power at lambda = 0 (tied statistic), difference | 0.095 | OK |
-| Table 4 | archived run outputs equal to paper (cells) | 20/20 | OK |
-| Table 4 | best_fit: cells equal to paper | 20/20 | OK |
-| Table 4 | best_fit: permutations choosing lambda = 0 by GCV, per triple | 0 0 0 0 0 | OK |
-| Table 4 | original: cells equal to paper | 0/20 | OK |
-| Table 4 | original: permutations choosing lambda = 0 by GCV, per triple | 0 0 0 0 0 | OK |
-| Table 4 | original: equal to ORIGINAL code rerun on this machine | 20/20 | OK |
-| Table 4 | paper: cells equal to paper | 0/20 | OK |
-| Table 4 | paper: permutations choosing lambda = 0 by GCV, per triple | 1000 1000 1000 1000 1000 | OK |
-| Table 4 | original rerun: lambdas chosen per permutation = archive | True | OK |
-| Table 4 | archive: lambda chosen by GCV for the observed data | 0 0 0 0 0 | OK |
-| Fig 3C | mean chosen lambda GCV, LOOCV (paper text in brackets) | -9.706 (-9.867), -10.023 (-10.023) | OK |
-| Fig 3D | mean chosen lambda GCV, LOOCV (paper text in brackets) | -10.620 (-10.623), -10.687 (-10.689) | OK |
-| Table1 | CS rows: rebuilt per-run p-values = archive (runs 1-10) | 4/240 | OK |
-| Table1 | Het rows: rebuilt per-run p-values = archive (runs 1-10) | 240/240 | OK |
-| Table2 | CS rows: rebuilt per-run p-values = archive (runs 1-10) | 142/240 | OK |
-| Table2 | Het rows: rebuilt per-run p-values = archive (runs 1-10) | 126/240 | OK |
-| Table3 | CS rows: rebuilt per-run p-values = archive (runs 1-10) | 122/240 | OK |
-| Table3 | Het rows: rebuilt per-run p-values = archive (runs 1-10) | 134/240 | OK |
-
+| Fig 1A | minimum points vs computed minima, largest offset (pt) | 10, 0.006 | OK |
+| Fig 1B | minimum points vs computed minima, largest offset (pt) | 10, 0.005 | OK |

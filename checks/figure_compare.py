@@ -1,18 +1,13 @@
 # -----------------------------------------------------------------------------
 # File:    checks/figure_compare.py
-# Purpose: Compare a figure with the data behind it, or two figures with each
-#          other, using the marks read by pdf_data.py.
-#          - scatter_vs_data: drawn points, in drawing order, against data rows;
-#            fits one affine map per axis and reports the largest leftover (pt).
+# Paper:   Gauran, Xue, Chen, Ombao, Yu (2022). Front. Neurosci. 16:836100.
+# Purpose: Compare two figures by the marks read by pdf_data.py.
+#          - _fit: one affine map between two coordinate lists and the largest
+#            leftover (pt), for drawn points.
 #          - tiles_vs_tiles: heat map tiles, fill colour tile by tile.
 #          - bars_vs_bars: histogram bars, heights must be proportional.
 # -----------------------------------------------------------------------------
-import csv
 from pdf_data import marks
-
-
-def read_csv(path):
-    return list(csv.DictReader(open(path)))
 
 
 def _fit(u, v):
@@ -22,17 +17,6 @@ def _fit(u, v):
     b = sum((a - mu) * (c - mv) for a, c in zip(u, v)) / sxx if sxx else 0.0
     a = mv - b * mu
     return a, b, max(abs(a + b * x - y) for x, y in zip(u, v))
-
-
-def scatter_vs_data(pdf, xs, ys, colour=None):
-    """Points drawn in `pdf` (optionally only those with fill `colour`) against
-    data (xs, ys) in the same order. Returns (n_drawn, n_data, max_dx_pt, max_dy_pt)."""
-    pts = [p for p in marks(pdf)['points'] if colour is None or p[2] == colour]
-    if len(pts) != len(xs):
-        return len(pts), len(xs), None, None
-    _, _, rx = _fit(xs, [p[0] for p in pts])
-    _, _, ry = _fit(ys, [p[1] for p in pts])
-    return len(pts), len(xs), rx, ry
 
 
 def _tiles(pdf):

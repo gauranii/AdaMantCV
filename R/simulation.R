@@ -4,11 +4,12 @@
 #          Dimensional Testing with Applications to Imaging Genetics.
 #          Front. Neurosci. 16:836100. Tables 1 to 3, Figure 3.
 # Purpose: Simulation study of AdaMantCV: simulated designs, one replication,
-#          and the driver that runs replications in parallel, stores their
-#          p-values and summarizes them into a rejection-rate table.
-# Inputs:  None.
-# Outputs: results/<name>_<settings>/scenarioSS_runRRRR.csv (one per
-#          replication) and results/<name>_<settings>.csv (the table).
+#          the driver that runs replications in parallel and stores their
+#          p-values, and the rejection-rate table of a set of p-values.
+# Inputs:  archive/run0204b/table<N>_pvalues.csv (unless rerun).
+# Outputs: results/<name>.csv (the table); in a rerun also
+#          results/<name>_<settings>/scenarioSS_runRRRR.csv (one per
+#          replication).
 # Usage:   source("R/setup.R"); simulation_study("table1_type1_error", "zero", opts)
 # Source:  R_initial.R, R_driver.R, R_simulations.R, R_fcns.R (Feb 2022).
 # -----------------------------------------------------------------------------
@@ -59,19 +60,14 @@ simulation_run <- function(design, run, q, sigma, n_negative, n_positive,
                            n_perms, seed, upper = 1000) {
   set.seed(10 * run + seed)
   Y <- design$X %*% design$beta + rnorm(nrow(design$X), mean = 0, sd = sigma)
-  adamant_cv(design$X, Y, q, n_negative, n_positive, n_perms, seed, upper,
-             method = METHOD)
+  adamant_cv(design$X, Y, q, n_negative, n_positive, n_perms, seed, upper)
 }
 
 # Run the replications asked for in `opts` (runs, scenarios, perms, negative,
-# positive, cores) that are not yet stored, then summarize every stored one.
-simulation_study <- function(name, beta_type, opts) {
-  scenarios <- simulation_scenarios(beta_type == "fixed")
-  if (opts$scenarios != "all") {
-    scenarios <- scenarios[scenarios$scenario %in% parse_index_set(opts$scenarios), ]
-  }
-  tag <- settings_tag(opts)
-  run_dir <- results_path(paste0(name, "_", tag))
+# positive, cores) that are not yet stored in results/<name>_<settings>/, and
+# return the p-values of every stored one.
+run_replications <- function(name, beta_type, scenarios, opts) {
+  run_dir <- results_path(paste0(name, "_", settings_tag(opts)))
   dir.create(run_dir, showWarnings = FALSE)
   run_file <- function(scenario, run) {
     file.path(run_dir, sprintf("scenario%02d_run%04d.csv", scenario, run))
@@ -84,7 +80,8 @@ simulation_study <- function(name, beta_type, opts) {
   }, design_keys$covariance, design_keys$p)
   names(designs) <- paste(design_keys$covariance, design_keys$p)
 
-  jobs <- expand.grid(run = parse_index_set(opts$runs, count = TRUE), row = seq_len(nrow(scenarios)))
+  jobs <- expand.grid(run = parse_index_set(opts$runs, count = TRUE),
+                      row = seq_len(nrow(scenarios)))
   jobs <- jobs[!file.exists(run_file(scenarios$scenario[jobs$row], jobs$run)), ]
   log_message("%s: %d replications to run", name, nrow(jobs))
   status <- parallel::mclapply(seq_len(nrow(jobs)), function(i) {
@@ -101,15 +98,37 @@ simulation_study <- function(name, beta_type, opts) {
   failed <- vapply(status, inherits, logical(1), what = "try-error")
   if (any(failed)) stop(sum(failed), " replications failed: ", status[failed][[1]])
 
-  pvalues <- do.call(rbind, lapply(list.files(run_dir, full.names = TRUE), read.csv))
-  rejected <- aggregate(cbind(runs = 1, gcv = p_gcv <= ALPHA, loocv = p_loo <= ALPHA,
-                              ga_gcv = p_ga_gcv <= ALPHA, ga_loocv = p_ga_loo <= ALPHA) ~
+  do.call(rbind, lapply(list.files(run_dir, full.names = TRUE), read.csv))
+}
+
+# Rejection rates of the four tests in every setting, from the p-values of
+# the replications (columns scenario, run, p_gcv, p_loo, p_ga_gcv, p_ga_loo).
+# A test rejects when its stored p-value is below ALPHA.
+rejection_rates <- function(scenarios, pvalues) {
+  rejected <- aggregate(cbind(runs = 1, gcv = p_gcv < ALPHA, loocv = p_loo < ALPHA,
+                              ga_gcv = p_ga_gcv < ALPHA, ga_loocv = p_ga_loo < ALPHA) ~
                           scenario, data = pvalues, FUN = sum)
   rates <- c("gcv", "loocv", "ga_gcv", "ga_loocv")
   rejected[rates] <- rejected[rates] / rejected$runs
   table <- merge(scenarios, rejected, by = "scenario", sort = FALSE)
-  table <- table[order(match(table$scenario, scenarios$scenario)), ]
-  write.csv(table, results_path(sprintf("%s_%s.csv", name, tag)), row.names = FALSE)
+  table[order(match(table$scenario, scenarios$scenario)), ]
+}
+
+# The table `name` ("table1_type1_error", ...): rejection rates from the
+# p-values of the archived run (archive/run0204b/table<N>_pvalues.csv) or,
+# with opts$rerun, of replications run here.
+simulation_study <- function(name, beta_type, opts) {
+  scenarios <- simulation_scenarios(beta_type == "fixed")
+  if (opts$scenarios != "all") {
+    scenarios <- scenarios[scenarios$scenario %in% parse_index_set(opts$scenarios), ]
+  }
+  pvalues <- if (opts$rerun) {
+    run_replications(name, beta_type, scenarios, opts)
+  } else {
+    read.csv(archive_path("run0204b", sub("_.*", "_pvalues.csv", name)))
+  }
+  table <- rejection_rates(scenarios, pvalues)
+  write.csv(table, results_path(paste0(name, ".csv")), row.names = FALSE)
   print(table, row.names = FALSE)
   invisible(table)
 }

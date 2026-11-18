@@ -6,7 +6,7 @@
 # Purpose: Ten-fold cross-validated MSE of ridge regression against log(lambda)
 #          for the ten clinical variables of the liver toxicity data, with 50
 #          randomly chosen genes (A) and with all 3116 genes (B).
-# Inputs:  <data>/liver/mixOmicsData.csv.
+# Inputs:  data/liver/mixOmicsData.csv.
 # Outputs: figures/fig1a_liver_cv_subset.pdf, figures/fig1b_liver_cv_full.pdf,
 #          results/fig1_minima.csv.
 # Usage:   Rscript scripts/fig1_liver_cv.R
@@ -14,18 +14,17 @@
 # -----------------------------------------------------------------------------
 
 source("R/setup.R")
+opts <- parse_args(list())  # no options; Figure 1 is always computed from the data
 
 library(glmnet)
 
-SUBSET_SEED    <- 889191 + 1  # seed of the published panel A
+SUBSET_SEED    <- 889191 + 1  # seed of panel A
 SUBSET_SIZE    <- 50
 SUBSET_LAMBDAS <- 10^seq(4, -2.5, by = -0.001)
-# The original set no seed before the fits of panel B. The published panel is
-# reproduced exactly (all ten minima) by the session state of a rerun of the
-# original file after its panel A loop over k = 1, 2: seed 889191 + 2, the 50
-# genes of k = 2 and the folds of its ten fits, then the single fit of
-# variable 1 at the top of the file, then panel B (checks/search/).
-FULL_AFTER_SEED <- 889191 + 2
+# Panel B continues the random number stream of the original session: seed
+# 889191 + 2, one sample of 50 genes, then eleven fold assignments.
+FULL_SEED      <- 889191 + 2
+FULL_SKIPPED_FOLDS <- 11
 FULL_LAMBDAS   <- 10^seq(9, -5, by = -0.1)
 N_FOLDS        <- 10
 MSE_AXIS_MAX   <- 1.2
@@ -62,14 +61,14 @@ set.seed(SUBSET_SEED)
 genes <- sample(seq_len(ncol(liver$X)), SUBSET_SIZE, replace = FALSE)
 subset_curves <- cv_curves(liver$X[, genes], liver$Y, SUBSET_LAMBDAS)
 
-# Draw what the k = 2 pass of the original loop drew (its curves are not
-# shown): the gene sample, then one fold assignment per variable, which is all
-# cv.glmnet() takes from the random number stream.
-set.seed(FULL_AFTER_SEED)
+# Random number stream as in the original run: after the seed, the gene
+# sample and FULL_SKIPPED_FOLDS fold assignments are drawn before the fits of
+# panel B (cv.glmnet() draws one fold assignment per fit).
+set.seed(FULL_SEED)
 invisible(sample(seq_len(ncol(liver$X)), SUBSET_SIZE, replace = FALSE))
-for (j in seq_len(ncol(liver$Y))) invisible(sample(rep(seq_len(N_FOLDS), length = nrow(liver$X))))
-# The rerun's first fit, of variable 1 alone, draws one more fold assignment.
-invisible(sample(rep(seq_len(N_FOLDS), length = nrow(liver$X))))
+for (i in seq_len(FULL_SKIPPED_FOLDS)) {
+  invisible(sample(rep(seq_len(N_FOLDS), length = nrow(liver$X))))
+}
 full_curves <- cv_curves(liver$X, liver$Y, FULL_LAMBDAS)
 
 save_figure(cv_plot(subset_curves), "fig1a_liver_cv_subset.pdf")

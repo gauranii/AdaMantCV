@@ -13,48 +13,33 @@
 # Source:  R_adaMantCV.R (Feb 2022).
 # -----------------------------------------------------------------------------
 
-# The two methods (argument `method` of adamant_cv()):
-# "original" repeats the code that made the paper: per-penalty p-value
-#   1 - percent rank (ties broken by rounding), final p-value by the
-#   dplyr 0.8.5 running sum (0.050 can come out above 0.05), and the GCV and
-#   LOOCV quirks of ridge_cv(variant = "feb2022").
-# "paper" is the method as written in the paper (Section 2, AdaMantCV
-#   algorithm): P(b) = #{c : T(c) >= T(b)} / (B + 1) with ties counted, the
-#   gamma p-value of a point mass is 1, P_CV = #{b : P(b) <= P(0)} / (B + 1)
-#   counted exactly, and every permutation is scored by GCV and LOOCV on its
-#   own response with the true smoother (ridge_cv(variant = "paper")).
-
-# Percent rank as computed by the C++ "hybrid" evaluation of dplyr 0.8.5, which
-# the original runs used for the final adaptive p-value: each distinct value,
-# in ascending order, gets the running sum of (number of ties) / (m - 1). The
-# sum is built by repeated addition, so a value such as 0.05 can come out one
-# rounding step above 50 / 1000; rejections (p <= alpha) depend on this.
+# Percent rank as the compiled code of dplyr 0.8.5 (used by the original runs)
+# computes it: each distinct value, in ascending order, gets the running sum
+# of (number of values equal to it) / (m - 1).
 percent_rank_cumulative <- function(x) {
   distinct <- sort(unique(x))
   position <- match(x, distinct)
-  ties <- tabulate(position, length(distinct))
-  cumsum(c(0, ties / (length(x) - 1)))[position]
+  counts <- tabulate(position, length(distinct))
+  cumsum(c(0, counts / (length(x) - 1)))[position]
 }
+
+# Adaptive p-value: the percent rank of the observed data (first element)
+# among the p-values of all data sets, each taken at its own chosen penalty.
+adaptive_pvalue <- function(chosen_pvalues) percent_rank_cumulative(chosen_pvalues)[1]
 
 # X: n x p predictors; Y: one response of length n; q: quantile below which
 # singular values are set to zero; n_negative, n_positive: sizes of the
 # penalty grid; n_perms: permutations; seed: seed of the permutations.
 # Row 1 of every per-permutation result is the observed data.
-# exact = TRUE computes every statistic in the original operation order (bit
-# for bit); FALSE is the faster matrix form (differences near 1e-14).
-# method = "original" (default, the code behind the paper) or "paper" (the
-#   method as the paper states it), as described above.
-# replay_lambda0 (original method only): c(perms_below = , gamma = ), the
-#   OBSERVED data at lambda = 0 as another machine rounded them: the number of
-#   permuted statistics below the observed one (the permutation p-value is
-#   then computed here as 1 - perms_below / B, the same arithmetic as the
-#   original) and the gamma p-value. At
-#   lambda = 0 with n < p these are set by rounding alone (README note 1), so
-#   this is the only way to repeat the 2022 cluster numbers on other hardware.
+# exact = TRUE computes every statistic in the operation order of the
+# original code; FALSE is the faster matrix form.
+# observed_lambda0: optional c(perms_below = , gamma = ), values of the
+#   observed data at lambda = 0 saved by the original run: the number of
+#   permuted statistics below the observed one and the gamma p-value. When
+#   given, the two p-values of the observed data at lambda = 0 are taken from
+#   them.
 adamant_cv <- function(X, Y, q, n_negative, n_positive, n_perms, seed,
-                       upper = 1000, exact = TRUE, method = c("original", "paper"),
-                       replay_lambda0 = NULL) {
-  method <- match.arg(method)
+                       upper = 1000, exact = TRUE, observed_lambda0 = NULL) {
   X <- as.matrix(X)
   Y <- as.matrix(Y)
   n <- nrow(X)
@@ -70,27 +55,18 @@ adamant_cv <- function(X, Y, q, n_negative, n_positive, n_perms, seed,
 
   statistics <- mantel_statistics(Z, ridge_weights(X_svd$d_tilde, lambdas),
                                   lambdas, exact)
-  p_perm <- permutation_pvalues(statistics, method)
-  p_gamma <- gamma_pvalues(statistics, method = method)
-  if (!is.null(replay_lambda0)) {
-    stopifnot(method == "original")
-    p_perm[1, lambdas == 0] <- 1 - replay_lambda0[["perms_below"]] / n_perms
-    p_gamma[1, lambdas == 0] <- replay_lambda0[["gamma"]]
+  p_perm <- permutation_pvalues(statistics)
+  p_gamma <- gamma_pvalues(statistics)
+  if (!is.null(observed_lambda0)) {
+    p_perm[1, lambdas == 0] <- 1 - observed_lambda0[["perms_below"]] / n_perms
+    p_gamma[1, lambdas == 0] <- observed_lambda0[["gamma"]]
   }
-  cv <- ridge_cv(X, Y_perm, lambdas,
-                 variant = if (method == "paper") "paper" else "feb2022")
+  cv <- ridge_cv(X, Y_perm, lambdas, variant = "feb2022")
 
   rows <- seq_len(n_perms + 1)
   best_gcv <- apply(cv$gcv, 1, which.min)
   best_loo <- apply(cv$loo, 1, which.min)
-  adaptive <- function(pvalues, best) {
-    chosen <- pvalues[cbind(rows, best)]
-    if (method == "paper") {
-      # P_CV = #{b : P(b) <= P(0)} / (B + 1), counted exactly
-      return(sum(chosen <= chosen[1] * (1 + TIE_TOLERANCE)) / length(chosen))
-    }
-    percent_rank_cumulative(chosen)[1]
-  }
+  adaptive <- function(pvalues, best) adaptive_pvalue(pvalues[cbind(rows, best)])
   list(p_values = c(gcv = adaptive(p_perm, best_gcv),
                     loo = adaptive(p_perm, best_loo),
                     ga_gcv = adaptive(p_gamma, best_gcv),

@@ -42,7 +42,7 @@ heat_map <- function(curves, column, midpoint, digits, zero_position, text_size)
 # sign of the penalty.
 sign_scatter <- function(table, column, label) {
   ggplot(table, aes(x = lambdas, y = .data[[column]])) +
-    geom_point(aes(color = sign), size = 1) + theme_bw() +
+    geom_point(aes(color = 2 + sign(lambdas)), size = 1) + theme_bw() +
     xlab("lambda") + ylab(label) +
     theme(legend.position = "none")
 }

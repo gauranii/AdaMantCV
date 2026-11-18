@@ -33,45 +33,42 @@ SIM_RHO       <- 0.025  # correlation of the compound symmetric covariance
 SIM_BETA_MEAN <- 1      # value (fixed) or mean (random) of the coefficients
 
 # ----- Paths -----
+
+# Raw data: the folder named by ADAMANT_DATA, or data/ in the repository.
 data_path <- function(...) {
   file.path(Sys.getenv("ADAMANT_DATA", file.path(REPO_ROOT, "data")), ...)
 }
 
 reference_path <- function(...) file.path(REPO_ROOT, "reference", ...)
+archive_path   <- function(...) file.path(REPO_ROOT, "archive", ...)
 
+# Outputs go to results/ and figures/ in the folder named by ADAMANT_OUTPUT,
+# or in the repository.
 output_path <- function(folder, name) {
-  dir.create(file.path(REPO_ROOT, folder), showWarnings = FALSE)
-  file.path(REPO_ROOT, folder, name)
+  folder <- file.path(Sys.getenv("ADAMANT_OUTPUT", REPO_ROOT), folder)
+  dir.create(folder, showWarnings = FALSE, recursive = TRUE)
+  file.path(folder, name)
 }
 
 results_path <- function(name) output_path("results", name)
-# Figures of the "paper" method get the suffix _paper (see parse_args()).
-figures_path <- function(name) {
-  if (METHOD == "paper") name <- sub("[.]pdf$", "_paper.pdf", name)
-  output_path("figures", name)
-}
+figures_path <- function(name) output_path("figures", name)
 
 # ----- Command line -----
 
-# Method of every computation (see R/adamant_cv.R): "original" (default, the
-# code that made the paper) or "paper" (the method as the paper states it).
-# Scripts set it with --method=paper; parse_args() stores it here.
-METHOD <- "original"
-
-# Read `--name=value` arguments. `defaults` is a named list; each value given
-# on the command line is converted to the type of its default. A `method`
-# entry also sets METHOD.
+# Read `--name=value` arguments and bare `--name` flags. `defaults` is a named
+# list; each value given on the command line is converted to the type of its
+# default, and a flag sets a logical default to TRUE. Every script accepts
+# --rerun: recompute from the data instead of reading the archived runs.
 parse_args <- function(defaults, args = commandArgs(trailingOnly = TRUE)) {
-  pairs <- regmatches(args, regexec("^--([a-z_]+)=(.*)$", args))
-  if (any(lengths(pairs) != 3)) stop("arguments must look like --name=value")
+  defaults <- c(list(rerun = FALSE), defaults)
+  pairs <- regmatches(args, regexec("^--([a-z_]+)(=(.*))?$", args))
+  if (any(lengths(pairs) != 4)) stop("arguments must look like --name=value or --name")
   for (pair in pairs) {
     name <- pair[2]
     if (!name %in% names(defaults)) stop("unknown argument --", name)
-    defaults[[name]] <- methods::as(pair[3], class(defaults[[name]]))
-  }
-  if (!is.null(defaults$method)) {
-    stopifnot(defaults$method %in% c("original", "paper"))
-    METHOD <<- defaults$method
+    is_flag <- pair[3] == ""
+    if (is_flag != is.logical(defaults[[name]])) stop("--", name, if (is_flag) " needs a value" else " takes no value")
+    defaults[[name]] <- if (is_flag) TRUE else methods::as(pair[4], class(defaults[[name]]))
   }
   defaults
 }
@@ -87,12 +84,11 @@ parse_index_set <- function(text, count = FALSE) {
   if (count && length(index) == 1) seq_len(index) else index
 }
 
-# Label of the settings a result file was computed with, used in file names so
-# that reduced test runs never overwrite or pass for full runs.
+# Label of the settings a rerun was computed with, used in the names of its
+# stored parts so that runs with different settings are kept apart.
 settings_tag <- function(opts, n_runs = NULL) {
   runs <- if (is.null(n_runs)) "" else sprintf("runs%d_", n_runs)
-  method <- if (METHOD == "paper") "paper_" else ""
-  sprintf("%s%sperms%d_grid%dx%d", method, runs, opts$perms, opts$negative, opts$positive)
+  sprintf("%sperms%d_grid%dx%d", runs, opts$perms, opts$negative, opts$positive)
 }
 
 # Read a result from `file` if it exists; otherwise compute it and store it.

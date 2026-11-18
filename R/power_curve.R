@@ -18,9 +18,9 @@ POWER_QUANTILE <- 0.5  # singular values below their median are set to zero
 # One replication: noisy response, its statistic and those of n_perms
 # permutations. Returns the permutation (row 1) and gamma (row 2) p-values of
 # the observed data for every penalty.
-# A permutation permutes the ROWS OF U, not the response, as in the 2021 code.
-# This is not a bug: crossprod(U[s, ], Y) = U' Y[order(s)], and order(s) is
-# again a uniform random permutation.
+# A permutation permutes the rows of U, as in the 2021 code, which is the same
+# as permuting the response: crossprod(U[s, ], Y) = U' Y[order(s)], and
+# order(s) is again a uniform random permutation.
 power_run <- function(run, U, weights, lambdas, y, sigma, n_perms, seed, exact) {
   n <- length(y)
   set.seed(seed + 10 * run)
@@ -29,13 +29,13 @@ power_run <- function(run, U, weights, lambdas, y, sigma, n_perms, seed, exact) 
              vapply(seq_len(n_perms), function(b) drop(crossprod(U[sample.int(n), ], Y)),
                     numeric(ncol(U))))
   statistics <- mantel_statistics(Z, weights, lambdas, exact)
-  rbind(observed_pvalues(statistics, METHOD),
-        gamma_pvalues(statistics, rows = 1, method = METHOD))
+  rbind(observed_pvalues(statistics), gamma_pvalues(statistics, rows = 1))
 }
 
 # Power and mean -log10 p-value for every penalty over n_runs replications,
 # for the permutation test and its gamma approximation (MOM). Columns as in
-# the archived CV_ch<k>.csv files, without the two cross-validation columns.
+# the CV_ch<k>.csv files of the original runs, without the two
+# cross-validation columns.
 power_curve <- function(X, y, n_negative, n_positive, sigma, n_perms, n_runs,
                         alpha, seed, upper = 1000, cores = 1, exact = FALSE) {
   X_svd <- truncated_svd(X, POWER_QUANTILE)
@@ -71,22 +71,21 @@ gcv_curve <- function(X, y, n_negative, n_positive, sigma, seed, upper = 1000) {
   lambdas <- lambda_grid(X_svd$d_tilde, nrow(X), ncol(X), n_negative, n_positive, upper)
   set.seed(seed)
   Y <- y + rnorm(length(y), mean = 0, sd = sigma)
-  cv <- ridge_cv(X, Y, lambdas, variant = if (METHOD == "paper") "paper" else "dec2021")
+  cv <- ridge_cv(X, Y, lambdas, variant = "dec2021")
   data.frame(lambdas = lambdas, gcv = drop(cv$gcv), loo = drop(cv$loo))
 }
 
-# Power and cross-validation curves of one response as one table (the columns
-# of the archived CV_ch<k>.csv). Both parts are stored in results/ under
-# `tag` and the settings in `opts` (runs, perms, negative, positive, cores),
-# so figures that share a response share the work.
+# Power and cross-validation curves of one response as one table (columns
+# CURVE_COLUMNS, as the archived curve tables). Both parts are stored in
+# results/ under `tag` and the settings in `opts` (runs, perms, negative,
+# positive, cores), so figures that share a response share the work.
 curve_table <- function(tag, X, y, opts) {
   power <- cached_csv(
     results_path(sprintf("power_%s_%s.csv", tag, settings_tag(opts, opts$runs))),
     function() power_curve(X, y, opts$negative, opts$positive, SIGMA, opts$perms,
                            opts$runs, ALPHA, SEED, UPPER, opts$cores))
   cv <- cached_csv(
-    results_path(sprintf("gcv_%s_%sgrid%dx%d.csv", tag, if (METHOD == "paper") "paper_" else "",
-                         opts$negative, opts$positive)),
+    results_path(sprintf("gcv_%s_grid%dx%d.csv", tag, opts$negative, opts$positive)),
     function() gcv_curve(X, y, opts$negative, opts$positive, SIGMA, SEED, UPPER))
-  cbind(power, cv[c("gcv", "loo")])
+  cbind(power, cv[c("gcv", "loo")])[CURVE_COLUMNS]
 }

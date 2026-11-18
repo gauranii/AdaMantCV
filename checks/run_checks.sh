@@ -2,40 +2,26 @@
 # -----------------------------------------------------------------------------
 # File:    checks/run_checks.sh
 # Paper:   Gauran, Xue, Chen, Ombao, Yu (2022). Front. Neurosci. 16:836100.
-# Purpose: Run every check and write checks/RESULTS.md.
-#          1. archived run outputs vs the numbers printed in the paper
-#          2. rebuilt functions vs the original 2021/2022 functions (optional)
-#          3. published figures vs the same figures redrawn from the archive
-#          4. rebuilt results (results/) vs the archive and the paper
-#          5. the side-by-side tables of the README vs the results
-# Usage:   ADAMANT_DATA=... ADAMANT_ARCHIVE=... ADAMANT_PUBLISHED=... \
-#          [ADAMANT_ORIGINAL=... ADAMANT_ORIGINAL_RERUN=...] bash checks/run_checks.sh
-#          Run from the repository root after the figure and table scripts.
-#          ADAMANT_ORIGINAL (original scripts) enables check 2 (slow, ~1 hour).
+# Purpose: Build every table and figure with the default settings of its
+#          script, compare each with the paper by code, and write the
+#          comparison as Markdown.
+# Usage:   bash checks/run_checks.sh [RESULTS.md]
+#          Run from the repository root. Outputs go to results/ and figures/
+#          (or under ADAMANT_OUTPUT). The comparison is written to the file
+#          given, checks/RESULTS.md by default. Exit status 1 if a check fails.
 # -----------------------------------------------------------------------------
 set -euo pipefail
 python=${PYTHON:-python3}  # a Python 3 interpreter (standard library only)
-repo=$(pwd)
-out=results/checks
-mkdir -p "$out"
+output=${ADAMANT_OUTPUT:-$(pwd)}
+report=${1:-checks/RESULTS.md}
 
-Rscript checks/check_archive_vs_paper.R | tee "$out/archive_vs_paper.txt"
-
-if [ -n "${ADAMANT_ORIGINAL:-}" ]; then
-  Rscript checks/check_equivalence.R | grep -E 'OK|DIFFERENT|equivalence' | tee "$out/equivalence.txt"
-fi
-
-# Redraw the figures from the archived run outputs in a scratch copy
-redraw=$(mktemp -d)
-cp -R R scripts reference "$redraw"/
-"$python" checks/archive_to_cache.py "$ADAMANT_ARCHIVE" "$redraw/results"
-for s in fig2_liver_heat fig3_lambda_hist fig5_eeg_heat fig6_eeg_heat \
-         fig7_power_gcv_decreasing fig8_power_gcv_increasing; do
-  (cd "$redraw" && Rscript "scripts/$s.R" --cores=1 > /dev/null)
+for script in scripts/*.R; do
+  Rscript "$script" > /dev/null
 done
-"$python" checks/check_figures.py "$ADAMANT_PUBLISHED" "$redraw/figures" "$repo" | tee "$out/figures.txt"
-rm -rf "$redraw"
 
-"$python" checks/check_results.py "$ADAMANT_ARCHIVE" "$repo" ${ADAMANT_ORIGINAL_RERUN:-} | tee "$out/results.txt"
-"$python" checks/write_results.py "$out" > checks/RESULTS.md
-"$python" checks/check_readme.py "$repo" "$ADAMANT_PUBLISHED/LiverToxicityFull.pdf"
+status=0
+"$python" checks/check_tables.py "$output/results" "$output/results/checks" || status=1
+"$python" checks/check_figures.py archive/figures "$output/figures" "$output/results" \
+  "$output/results/checks" || status=1
+"$python" checks/write_results.py "$output/results/checks" > "$report"
+exit $status
