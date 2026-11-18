@@ -160,7 +160,7 @@ Every table and figure:
 | Table 3 | archived runs give the paper: 48/48 cells; runs 1 to 10 rerun equal to the archive: heteroskedastic 134/240, compound symmetric 122/240 | not run yet (job N14) |
 | Table 4 | 20/20 cells equal to the paper | all 20 p-values 1 |
 | Figure 1A | 10 minima within 0.006 pt of the published points | same code |
-| Figure 1B | closest of 17 session states tried: largest offset 14.9 pt, log penalty within 0.92, CV MSE within 0.032 (folds lost, see note 10) | same code |
+| Figure 1B | 10/10 minima on the published penalty, largest offset 0.0 pt (session state recovered, see note 10) | same code |
 | Figure 2 | drawn from the archived runs: 4/4 checks OK | power at lambda != 0 equal to the default (largest difference 0); at lambda = 0 power 0 for all 10 variables |
 | Figure 3 | drawn from the archived runs: 4/4 checks OK; rerun mean chosen penalty, GCV and LOOCV (paper text in brackets): C -9.706 (-9.867), -10.023 (-10.023), D -10.620 (-10.623), -10.687 (-10.689) | not run yet (job N14) |
 | Figures 5, 6 | drawn from the archived runs: Figure 5 4/4 checks OK, Figure 6 4/4 checks OK | not run |
@@ -202,8 +202,7 @@ What these tables say.
   is X beta plus small noise, and the fit at lambda near 0 is the same for
   every permutation up to the mean, which a permutation does not change.
 - **Figure 1B**: the original set no seed before its folds (note 10). The
-  default now uses the closest of 17 session states tried, not a recovered
-  seed.
+  default replays the session state that reproduces the published panel.
 - **Figures 2 and 5 to 8, correct version**: only the lambda = 0 point
   changes (power 0, since every permuted statistic ties). Figure 2 was rerun
   that way; Figures 5 to 8 were not rerun tonight.
@@ -213,7 +212,7 @@ What these tables say.
 - **Figures 2, 3, 5 to 8, drawn from the archived data**: every tile colour,
   bar and point of the published files is reproduced.
 - **Figure 1A**: the ten minimum points match the published figure.
-  **Figure 1B**: see note 10.
+  **Figure 1B**: the ten minimum points match too (note 10).
 - **Figure 2, recomputed in full**: equal to the archived run to about 1e-13,
   except at lambda = 0 (note 1).
 - **Figures 5 to 8, recomputed in full** (26 triples, 1000 runs each): the
@@ -282,12 +281,17 @@ Notes, each found by the checks:
    2021 power code permutes the rows of U rather than the response; that is
    kept in both versions, since it gives the same permutation distribution.
 10. **Figure 1B folds.** The original code set no seed before the
-    cross-validation folds of panel B, so the published panel cannot be
-    reproduced fold for fold. `checks/search/fig1b_seed_search.R` tried 17
-    seeds and session states; `checks/search/fig1b_score.py` reads the
-    published minima on the published axes and ranks them. The closest, now
-    the default, is the state the original script leaves after its panel A
-    loop over k = 1 and 2.
+    cross-validation folds of panel B, so they depend on what ran before in
+    the session. `checks/search/fig1b_seed_search.R` (17 seeds and states)
+    and `checks/search/fig1b_seed_search2.R` (16 states of the original
+    file, each with both `sample.kind` settings) store the minima of each;
+    `checks/search/fig1b_score.py` reads the published minima on the
+    published axes and ranks them. One state reproduces all ten published
+    minima, with the default `sample.kind` of R 3.6 and later: the file rerun
+    after its panel A loop over k = 1 and 2 (seed 889191 + 2, the 50 genes
+    and ten fits of k = 2, then the single fit of variable 1 at the top of
+    the file, then panel B). That state is the default. The next closest of
+    the 49 is 14.9 pt off.
 
 ## Origin of each script
 
