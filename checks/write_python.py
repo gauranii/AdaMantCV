@@ -69,8 +69,10 @@ double as read from the files, which both implementations write with 15
 significant digits. Times are wall-clock seconds on an 8 core Apple M2
 laptop; the Python times include compiling its numba functions on first use.
 
-`python/tests/test_rng.py` (also run by `nix flake check`) compares the
-random numbers of `python/adamant/rng.py` with those R draws.
+The tests in `python/tests/` (also run by `nix flake check`) compare with R,
+bit for bit, the random numbers of `python/adamant/rng.py`, the gamma
+probabilities of `rmath.py` and the cross-validated ridge regression of
+`glmnet.py`.
 """)
 for file in sys.argv[1:3]:
     if os.path.exists(file):

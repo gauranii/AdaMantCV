@@ -15,7 +15,6 @@
 # Source:  glmnet 5.0 (cv.glmnet, elnet; gaussian family, alpha = 0).
 # -----------------------------------------------------------------------------
 
-import importlib.util
 import subprocess
 import sys
 import tempfile
@@ -25,11 +24,9 @@ from pathlib import Path
 import numpy as np
 
 ROOT = Path(__file__).resolve().parents[2]
-_spec = importlib.util.spec_from_file_location(
-    "adamant_glmnet", ROOT / "python" / "adamant" / "glmnet.py")
-glmnet = importlib.util.module_from_spec(_spec)
-sys.modules["adamant_glmnet"] = glmnet
-_spec.loader.exec_module(glmnet)
+sys.path.insert(0, str(ROOT / "python"))
+
+from adamant import glmnet  # noqa: E402
 
 LIVER = ROOT / "data" / "liver" / "mixOmicsData.csv"
 CVM_TOLERANCE = 1e-8  # largest relative difference of cvm allowed

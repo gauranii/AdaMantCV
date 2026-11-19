@@ -142,8 +142,10 @@
             '';
 
         # Build every table and figure with the R and with the Python
-        # scripts and compare the two; the result is the comparison
-        # (checks/PYTHON.md, with the stored comparison of the reruns).
+        # scripts and compare the two, and compare the random numbers,
+        # pgamma and the cross-validated ridge regression of the Python
+        # code with R; the result is the comparison (checks/PYTHON.md, with
+        # the stored comparison of the reruns).
         python =
           pkgs.runCommand "adamantcv-python"
             {
@@ -158,7 +160,9 @@
               cd ${self}
               bash checks/check_python.sh archive $TMPDIR/work $TMPDIR/PYTHON.md $TMPDIR \
                 || { cat $TMPDIR/PYTHON.md; exit 1; }
-              ${pyEnv pkgs}/bin/python python/tests/test_rng.py
+              python python/tests/test_rng.py
+              python python/tests/test_rmath.py
+              python python/tests/test_glmnet.py quick
               cp $TMPDIR/PYTHON.md $out
             '';
       });
