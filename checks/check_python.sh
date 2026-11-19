@@ -98,6 +98,8 @@ status=0
 python checks/check_python.py "$mode" "$work/$mode/r" "$work/$mode/python" \
   "$tables/python_$mode.csv" || status=1
 other=$([ "$mode" = archive ] && echo rerun || echo archive)
-[ -e "$tables/python_$other.csv" ] || cp "checks/python_$other.csv" "$tables/"
+if [ ! -e "$tables/python_$other.csv" ] && [ -e "checks/python_$other.csv" ]; then
+  cp "checks/python_$other.csv" "$tables/"
+fi
 python checks/write_python.py "$tables/python_archive.csv" "$tables/python_rerun.csv" > "$report"
 exit $status

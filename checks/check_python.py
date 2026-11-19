@@ -31,7 +31,7 @@ import sys
 mode, r_dir, py_dir, out_file = sys.argv[1:5]
 TOLERANCE = {"archive": {"results": 0.0, "plot_data": 1e-9},
              "rerun": {"results": 1e-8, "plot_data": 1e-8}}[mode]
-SETTINGS = {"archive": {}, "rerun": {"table1": "2 replications", "table2": "2 replications",
+SETTINGS = {"archive": {"fig1": "from the data"}, "rerun": {"table1": "2 replications", "table2": "2 replications",
                                      "table3": "2 replications", "fig5": "3 replications",
                                      "fig6": "3 replications"}}[mode]
 
@@ -208,7 +208,7 @@ for output, (script, patterns) in OUTPUTS.items():
     verdict = "DIFFERENT" if not total.within else "identical" if total.unequal == 0 else \
         "within tolerance"
     r_time, py_time = run_time(r_dir, script), run_time(py_dir, script)
-    rows.append({"output": output, "mode": mode, "settings": SETTINGS.get(output, "full"),
+    rows.append({"output": output, "mode": mode, "settings": SETTINGS.get(output, "archived runs" if mode == "archive" else "full"),
                  "files": total.files, "values": total.values, "not_identical": total.unequal,
                  "max_abs_diff": f"{total.max_abs:.3g}", "max_rel_diff": f"{total.max_rel:.3g}",
                  "tolerance": f"{max(TOLERANCE.values()):g}", "verdict": verdict,
