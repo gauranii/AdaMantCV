@@ -1,0 +1,41 @@
+# -----------------------------------------------------------------------------
+# File:    python/scripts/fig8_power_gcv_increasing.py
+# Paper:   Gauran, Xue, Chen, Ombao, Yu (2022). Ridge Penalization in High
+#          Dimensional Testing with Applications to Imaging Genetics.
+#          Front. Neurosci. 16:836100. Figure 8.
+# Purpose: Power of the ridge-penalized Mantel test (top) and GCV score (bottom)
+#          against the ridge penalty for three EEG triples whose power
+#          increases with the penalty.
+# Inputs:  archive/coh7/curves_eeg<k>.csv.gz for the three triples, reference/*.csv;
+#          with --rerun <data>/eeg/dat_ch<k>.csv instead of the archive.
+# Outputs: figures/fig8_{power,gcv}_<k>.pdf;
+#          with --rerun also results/power_eeg<k>_<settings>.csv and
+#          results/gcv_eeg<k>_<grid>.csv (shared by Figures 5 to 8).
+# Usage:   python python/scripts/fig8_power_gcv_increasing.py [--rerun] [--runs=1000] [--perms=1000]
+#          [--negative=500] [--positive=2000] [--cores=4]
+#          --rerun: recompute the curves from the data (ADAMANT_DATA).
+# Source:  scripts/fig8_power_gcv_increasing.R.
+# -----------------------------------------------------------------------------
+import os
+import sys
+
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
+
+import pandas as pd  # noqa: E402
+
+from adamant.data import EEG_GRID, eeg_curves  # noqa: E402
+from adamant.plots import save_power_gcv_panels  # noqa: E402
+from adamant.setup import PAPER, PATHS, curve_options, parse_args  # noqa: E402
+
+# Rows of the curve table shown in each GCV panel and the largest GCV shown,
+# as in the published panels.
+GCV_WINDOWS = pd.DataFrame({"triple": [191, 184, 160],
+                            "first": [413, 453, 31],
+                            "last": [650, 650, 650],
+                            "y_max": [16, 15.3, 21.6625]})
+
+opts = parse_args(curve_options(EEG_GRID, PAPER))
+
+curves = eeg_curves(list(GCV_WINDOWS["triple"]), opts, PAPER, PATHS)
+save_power_gcv_panels("fig8", GCV_WINDOWS, list(curves.values()), PATHS["figures"],
+                      PAPER["figure_size"])
