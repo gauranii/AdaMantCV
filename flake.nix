@@ -26,6 +26,25 @@
           ];
         };
 
+      # Python with the packages of python/adamant; numba compiles the random
+      # number generator and the loops that follow R's order of operations.
+      pyEnv =
+        pkgs:
+        pkgs.python3.withPackages (
+          ps: with ps; [
+            numpy
+            scipy
+            pandas
+            matplotlib
+            numba
+          ]
+        );
+
+      # The BLAS and LAPACK library R is linked to; python/adamant/rbase.py
+      # calls it for its matrix products and decompositions.
+      blasLibrary =
+        pkgs: "${pkgs.openblas}/lib/libopenblas${pkgs.stdenv.hostPlatform.extensions.sharedLibrary}";
+
       # One command per table and figure of the paper.
       scripts = {
         table1 = "table1_type1_error";
@@ -61,23 +80,46 @@
         program = "${runner pkgs name names}";
         meta.description = "Build ${name} of the paper";
       };
+
+      # The same commands with the Python scripts, as py-<name>.
+      pyRunner =
+        pkgs: name: names:
+        pkgs.writeShellScript "adamantcv-py-${name}" ''
+          set -euo pipefail
+          export ADAMANT_OUTPUT="''${ADAMANT_OUTPUT:-$PWD}"
+          export OPENBLAS_NUM_THREADS=1 VECLIB_MAXIMUM_THREADS=1
+          export ADAMANT_BLAS=${blasLibrary pkgs}
+          cd ${self}
+          for script in ${lib.concatStringsSep " " names}; do
+            ${pyEnv pkgs}/bin/python "python/scripts/$script.py" "$@"
+          done
+        '';
+      pyApp = pkgs: name: names: {
+        type = "app";
+        program = "${pyRunner pkgs name names}";
+        meta.description = "Build ${name} of the paper with the Python scripts";
+      };
     in
     {
       devShells = forEachSystem (pkgs: {
         default = pkgs.mkShell {
           packages = [
             (rEnv pkgs)
-            pkgs.python3
+            (pyEnv pkgs)
           ];
           OPENBLAS_NUM_THREADS = 1;
+          VECLIB_MAXIMUM_THREADS = 1;
+          ADAMANT_BLAS = blasLibrary pkgs;
         };
       });
 
       apps = forEachSystem (
         pkgs:
         lib.mapAttrs (name: script: app pkgs name [ script ]) scripts
+        // lib.mapAttrs' (name: script: lib.nameValuePair "py-${name}" (pyApp pkgs name [ script ])) scripts
         // {
           all = app pkgs "all" (lib.attrValues scripts);
+          py-all = pyApp pkgs "all" (lib.attrValues scripts);
         }
       );
 
@@ -97,6 +139,27 @@
               cd ${self}
               bash checks/run_checks.sh $TMPDIR/RESULTS.md || { cat $TMPDIR/RESULTS.md; exit 1; }
               cp $TMPDIR/RESULTS.md $out
+            '';
+
+        # Build every table and figure with the R and with the Python
+        # scripts and compare the two; the result is the comparison
+        # (checks/PYTHON.md, with the stored comparison of the reruns).
+        python =
+          pkgs.runCommand "adamantcv-python"
+            {
+              nativeBuildInputs = [
+                (rEnv pkgs)
+                (pyEnv pkgs)
+              ];
+              ADAMANT_BLAS = blasLibrary pkgs;
+            }
+            ''
+              export HOME=$TMPDIR
+              cd ${self}
+              bash checks/check_python.sh archive $TMPDIR/work $TMPDIR/PYTHON.md $TMPDIR \
+                || { cat $TMPDIR/PYTHON.md; exit 1; }
+              ${pyEnv pkgs}/bin/python python/tests/test_rng.py
+              cp $TMPDIR/PYTHON.md $out
             '';
       });
 

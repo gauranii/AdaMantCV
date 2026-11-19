@@ -61,3 +61,6 @@ rsconnect/
 /results/
 /figures/
 /result
+
+# Python byte code and compiled-function caches
+__pycache__/
