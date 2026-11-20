@@ -8,7 +8,7 @@
 # Usage:   python3 checks/check_python.py archive|rerun <R output dir>
 #          <Python output dir> <comparison csv>
 # Inputs:  <dir>/results/, <dir>/plot_data/, <dir>/logs/<script>.done (time
-#          and peak memory) of both implementations, written by
+#          peak memory and cores) of both implementations, written by
 #          checks/check_python.sh.
 # Outputs: the comparison csv, one row per output of the paper: files and
 #          values compared, how many values are not identical, the largest
@@ -184,13 +184,13 @@ def compare_plot_data(total, r_file, py_file, file):
 
 
 def run_time(folder, script):
-    """Seconds and peak memory (MB) of a script, from its .done file."""
+    """Seconds, peak memory (MB) and cores of a script, from its .done file."""
     try:
         with open(os.path.join(folder, "logs", script + ".done")) as f:
-            seconds, memory = f.read().strip().split(",")
-        return seconds, memory
+            fields = f.read().strip().split(",")
+        return fields[0], fields[1], fields[2] if len(fields) > 2 else "4"
     except OSError:
-        return "", ""
+        return "", "", ""
 
 
 rows = []
@@ -214,6 +214,7 @@ for output, (script, patterns) in OUTPUTS.items():
                  "tolerance": f"{max(TOLERANCE.values()):g}", "verdict": verdict,
                  "r_seconds": r_time[0], "python_seconds": py_time[0],
                  "r_peak_mb": r_time[1], "python_peak_mb": py_time[1],
+                 "r_cores": r_time[2], "python_cores": py_time[2],
                  "problems": "; ".join(sorted(set(total.problems))[:5])})
     print(f"{output:7} {mode:8} files {total.files:3d} values {total.values:8d} "
           f"not identical {total.unequal:7d} max abs {total.max_abs:9.3g} "

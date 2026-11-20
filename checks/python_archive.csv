@@ -1,0 +1,12 @@
+output,mode,settings,files,values,not_identical,max_abs_diff,max_rel_diff,tolerance,verdict,r_seconds,python_seconds,r_peak_mb,python_peak_mb,r_cores,python_cores,problems
+table1,archive,archived runs,1,108,0,0,0,1e-09,identical,1.0,1.0,0,0,4,4,
+table2,archive,archived runs,1,108,0,0,0,1e-09,identical,1.0,1.0,0,0,4,4,
+table3,archive,archived runs,1,108,0,0,0,1e-09,identical,1.0,1.0,0,0,4,4,
+table4,archive,archived runs,1,50,0,0,0,1e-09,identical,1.0,1.0,0,0,4,4,
+fig1,archive,from the data,3,598040,0,0,0,1e-09,identical,18.5,8.2,690,236,4,4,
+fig2,archive,archived runs,2,48016,0,0,0,1e-09,identical,1.0,2.1,0,197,4,4,
+fig3,archive,archived runs,4,2196,0,0,0,1e-09,identical,2.1,2.1,166,165,4,4,
+fig5,archive,archived runs,2,480016,0,0,0,1e-09,identical,2.1,2.1,224,197,4,4,
+fig6,archive,archived runs,2,480016,0,0,0,1e-09,identical,2.1,2.1,224,198,4,4,
+fig7,archive,archived runs,6,73935,0,0,0,1e-09,identical,2.1,2.1,169,170,4,4,
+fig8,archive,archived runs,6,71955,0,0,0,1e-09,identical,2.1,2.1,169,170,4,4,

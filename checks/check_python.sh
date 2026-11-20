@@ -22,7 +22,9 @@
 #          (checks/PYTHON.md by default).
 #          CORES (default 4) is passed to the scripts as --cores; IMPLS
 #          (default "r python") chooses the implementations to run.
-#          A run stops when its processes use more than MAX_RSS_MB (3072).
+#          A run stops when its processes use more than MAX_RSS_MB (3072,
+#          the sum of their resident memory); it can be run again with
+#          fewer cores, which does not change its result.
 #          Exit status 1 if a comparison fails.
 # -----------------------------------------------------------------------------
 set -euo pipefail
@@ -78,9 +80,9 @@ timed() {
     sleep 1
   done
   wait $pid || { echo "$impl $name failed, see $dir/logs/$name.log" >&2; exit 1; }
-  awk -v a="$start" -v b="$EPOCHREALTIME" -v p="$peak" 'BEGIN { printf "%.1f,%d\n", b - a, p }' \
-    > "$dir/logs/$name.done"
-  echo "$impl $name: $(cat "$dir/logs/$name.done") (s, peak MB)"
+  awk -v a="$start" -v b="$EPOCHREALTIME" -v p="$peak" -v c="$cores" \
+    'BEGIN { printf "%.1f,%d,%d\n", b - a, p, c }' > "$dir/logs/$name.done"
+  echo "$impl $name: $(cat "$dir/logs/$name.done") (s, peak MB, cores)"
 }
 
 for name in $outputs; do

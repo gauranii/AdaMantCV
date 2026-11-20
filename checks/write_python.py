@@ -31,7 +31,9 @@ Figures 1, 2, 3, 7 and 8 are run in full. Tables 1 to 3 are run with 2
 replications per setting and Figures 5 and 6 with 3 replications per triple,
 with the seeds of the full runs. Tolerance: 1e-8 (relative). Compared are the
 tables, the stored parts of the rerun (curves, chosen penalties, p-values of
-every replication) and the plotted numbers.
+every replication) and the plotted numbers. A run whose processes pass 3 GB
+of memory is stopped and run again with fewer cores (shown beside its time);
+the number of cores does not change a result.
 """,
 }
 
@@ -46,11 +48,16 @@ def section(file):
              "| Output | Run | Files | Values | Not identical | Largest difference | "
              "Largest relative difference | Verdict | R (s) | Python (s) |",
              "|---|---|---|---|---|---|---|---|---|---|"]
+
+    def seconds(row, side):
+        fewer = mode == "rerun" and row[f"{side}_cores"] not in ("", "4")
+        return row[f"{side}_seconds"] + (f" ({row[f'{side}_cores']} cores)" if fewer else "")
+
     for row in rows:
         lines.append(f"| {NAMES[row['output']]} | {row['settings']} | {row['files']} | "
                      f"{row['values']} | {row['not_identical']} | {row['max_abs_diff']} | "
-                     f"{row['max_rel_diff']} | {row['verdict']} | {row['r_seconds']} | "
-                     f"{row['python_seconds']} |")
+                     f"{row['max_rel_diff']} | {row['verdict']} | {seconds(row, 'r')} | "
+                     f"{seconds(row, 'python')} |")
     problems = [f"- {NAMES[row['output']]}: {row['problems']}" for row in rows if row["problems"]]
     if problems:
         lines += ["", "Differences:", ""] + problems
