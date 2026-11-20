@@ -35,6 +35,7 @@ implementations give the same outputs, checked by `nix flake check`.
 | `python/tests/` | Comparisons of `rng.py`, `rmath.py` and `glmnet.py` with R |
 | `archive/` | Outputs of the original runs that the scripts read, the published figure files (`figures/`, named as the figures the scripts draw), and `reduce_archive.R`, which made the former from the run folders |
 | `data/liver/` | The liver toxicity data |
+| `coherence/` | The scripts that computed the EEG coherence and built the per-triple files, with how each step connects to the data folders (not run by the flake) |
 | `reference/` | The 250 EEG triples (`triple.csv`), the channel names, and `table4_cluster_lambda0.csv` |
 | `checks/` | The numbers printed in the paper (`paper_values.csv`), the comparison scripts and their result (`RESULTS.md`), and `check_equivalence.R`, which compares the outputs of two versions of the code; `check_python.sh`, which compares the outputs of the R and the Python scripts, and its result (`PYTHON.md`); `versions.sh`, which prints the software versions |
 | `flake.nix`, `flake.lock` | Pinned environment (R with ggplot2, MASS and glmnet; Python with numpy, scipy, pandas, matplotlib and numba), one command per output, and the checks |
@@ -133,9 +134,14 @@ recomputed results can differ.
 
 ## Data
 
-- **Liver toxicity data** (`data/liver/mixOmicsData.csv`): 64 samples, 10
-  clinical variables and 3116 gene expressions; the public `liver.toxicity`
-  data of the R package [mixOmics](https://mixomics.org), exported to csv.
+- **Liver toxicity data** (`data/liver/mixOmicsData.csv`): 64 rats, 10
+  clinical chemistry measurements and 3116 gene expressions; the public
+  `liver.toxicity` data of the Bioconductor package
+  [mixOmics](https://mixomics.org), exported to csv on 2021-12-05
+  (`library(mixOmics); data(liver.toxicity)`). The data are from Bushel,
+  Wolfinger and Gibson (2007), BMC Systems Biology 1:15,
+  https://doi.org/10.1186/1752-0509-1-15, and Heinloth et al. (2004),
+  Toxicological Sciences 80:193-202, https://doi.org/10.1093/toxsci/kfh145.
   Used by Figures 1 and 2.
 - **EEG coherence and SNPs** of 350 subjects: one file
   `04_coherence_SNPs/dat_ch<k>.csv` per triple k of channel pair and frequency
@@ -147,8 +153,8 @@ recomputed results can differ.
 
   | Folder | Content |
   |---|---|
-  | `01_raw/` | The raw data |
-  | `02_coherence/` | The coherence |
+  | `01_raw/` | Genotypes of the 350 subjects (`eeg_dat_snp_all.RData`) and the 500 candidate SNPs (`cups_top_500_SNPs.txt`) |
+  | `02_coherence/` | Band coherence of the 64 channels per subject (`vwm_coh_clean.RData`, 350 x 64 x 64 x 5), computed by the scripts in `coherence/`, and the earlier test results that came with it (`coh_results.RData`) |
   | `03_triples_channels/` | `triple.csv` and `chan_names.csv` (in the repository as `reference/`) |
   | `04_coherence_SNPs/` | `dat_ch<k>.csv`, k = 1 to 250, read by the scripts |
   | `liver_toxicity/` | The liver toxicity data (in the repository as `data/liver/`) |
