@@ -7,8 +7,8 @@
 #          (coefficients drawn from N(1, 0.5)).
 # Inputs:  archive/run0204b/table3_pvalues.csv (p-values of the 500 replications
 #          of the archived run); none with --rerun (simulated data).
-# Outputs: results/table3_power_random.csv (the table); with --rerun also
-#          results/table3_power_random_<settings>/scenarioSS_runRRRR.csv.
+# Outputs: results/Table3_power_random-effects.csv (the table); with --rerun also
+#          results/Table3_power_random-effects_<settings>/scenarioSS_runRRRR.csv.
 # Usage:   Rscript scripts/table3_power_random.R [--rerun] [--runs=500] [--scenarios=all]
 #          [--perms=1000] [--negative=50] [--positive=200] [--cores=4]
 #          --rerun: run the replications here instead of reading the archive.
@@ -21,4 +21,4 @@ source("R/setup.R")
 
 opts <- parse_args(c(list(runs = "500", scenarios = "all"), test_options(PAPER)))
 
-simulation_study("table3_power_random", beta_type = "random", opts, PAPER, PATHS)
+simulation_study("Table3_power_random-effects", beta_type = "random", opts, PAPER, PATHS)

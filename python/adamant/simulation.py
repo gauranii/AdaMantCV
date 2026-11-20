@@ -205,8 +205,8 @@ def simulation_study(name, beta_type, opts, settings, paths, design=SIMULATION_D
     (archive/run0204b/table<N>_pvalues.csv) or, with `opts["rerun"]`, of
     replications run here. The table is written to results/<name>.csv.
 
-    Parameters: name ("table1_type1_error", "table2_power_fixed" or
-    "table3_power_random"), beta_type (as for `simulate_design()`), opts
+    Parameters: name ("Table1_type1-error", "Table2_power_fixed-effects" or
+    "Table3_power_random-effects"), beta_type (as for `simulate_design()`), opts
     (options: rerun, scenarios, "all" or an index text, and those of
     `run_replications()`), settings (settings of the paper), paths (project
     paths: archive, results), design (simulation design).
@@ -220,7 +220,7 @@ def simulation_study(name, beta_type, opts, settings, paths, design=SIMULATION_D
         pvalues = run_replications(run_dir, beta_type, scenarios, opts, settings, design)
     else:
         pvalues = read_csv(os.path.join(paths["archive"], "run0204b",
-                                        re.sub("_.*", "_pvalues.csv", name)))
+                                        re.sub("_.*", "_pvalues.csv", name).lower()))
     table = rejection_rates(scenarios, pvalues, settings["alpha"])
     write_csv(table, output_file(paths["results"], f"{name}.csv"))
     print(table.to_string(index=False))

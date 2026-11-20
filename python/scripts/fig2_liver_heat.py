@@ -8,7 +8,8 @@
 #          clinical variables of the liver toxicity data (3116 genes).
 # Inputs:  archive/liver/curves_liver<j>.csv.gz;
 #          with --rerun data/liver/mixOmicsData.csv instead.
-# Outputs: figures/fig2{a_logp,b_power}_liver_heat.pdf;
+# Outputs: figures/Fig2A_liver_heatmap_mean-log10-pvalue.pdf,
+#          figures/Fig2B_liver_heatmap_power.pdf;
 #          with --rerun also results/power_liver<j>_<settings>.csv and
 #          results/gcv_liver<j>_<grid>.csv.
 # Usage:   python python/scripts/fig2_liver_heat.py [--rerun] [--runs=1000] [--perms=1000]
@@ -33,6 +34,6 @@ opts = parse_args(curve_options(LIVER_GRID, PAPER))
 
 # Panel B shows the power of the gamma approximation (column power_MOM), as
 # drawn by R_Heat3.R.
-save_heat_maps("fig2", "liver_heat.pdf", liver_curves(opts, PAPER, PATHS), "power_MOM",
+save_heat_maps("Fig2", "liver", "", liver_curves(opts, PAPER, PATHS), "power_MOM",
                MIDPOINTS, LAMBDA_DIGITS, opts["negative"] - 1, AXIS_TEXT_SIZE,
                PATHS["figures"], PAPER["figure_size"])

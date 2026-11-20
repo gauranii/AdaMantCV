@@ -178,8 +178,8 @@ rejection_rates <- function(scenarios, pvalues, alpha) {
 #' (archive/run0204b/table<N>_pvalues.csv) or, with `opts$rerun`, of
 #' replications run here. The table is written to results/<name>.csv.
 #'
-#' @param name "table1_type1_error", "table2_power_fixed" or
-#'   "table3_power_random".
+#' @param name "Table1_type1-error", "Table2_power_fixed-effects" or
+#'   "Table3_power_random-effects".
 #' @param beta_type As for `simulate_design()`.
 #' @param opts Options: `rerun`, `scenarios` ("all" or an index text) and
 #'   those of `run_replications()`.
@@ -197,7 +197,7 @@ simulation_study <- function(name, beta_type, opts, settings, paths,
     run_dir <- file.path(paths$results, paste0(name, "_", settings_tag(opts)))
     run_replications(run_dir, beta_type, scenarios, opts, settings, design)
   } else {
-    read.csv(file.path(paths$archive, "run0204b", sub("_.*", "_pvalues.csv", name)))
+    read.csv(file.path(paths$archive, "run0204b", tolower(sub("_.*", "_pvalues.csv", name))))
   }
   table <- rejection_rates(scenarios, pvalues, settings$alpha)
   write.csv(table, output_file(paths$results, paste0(name, ".csv")), row.names = FALSE)

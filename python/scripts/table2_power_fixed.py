@@ -7,8 +7,8 @@
 #          (every coefficient equal to 1).
 # Inputs:  archive/run0204b/table2_pvalues.csv (p-values of the 500 replications
 #          of the archived run); none with --rerun (simulated data).
-# Outputs: results/table2_power_fixed.csv (the table); with --rerun also
-#          results/table2_power_fixed_<settings>/scenarioSS_runRRRR.csv.
+# Outputs: results/Table2_power_fixed-effects.csv (the table); with --rerun also
+#          results/Table2_power_fixed-effects_<settings>/scenarioSS_runRRRR.csv.
 # Usage:   python python/scripts/table2_power_fixed.py [--rerun] [--runs=500] [--scenarios=all]
 #          [--perms=1000] [--negative=50] [--positive=200] [--cores=4]
 #          --rerun: run the replications here instead of reading the archive.
@@ -26,4 +26,4 @@ from adamant.simulation import simulation_study  # noqa: E402
 
 opts = parse_args({"runs": "500", "scenarios": "all", **test_options(PAPER)})
 
-simulation_study("table2_power_fixed", "fixed", opts, PAPER, PATHS)
+simulation_study("Table2_power_fixed-effects", "fixed", opts, PAPER, PATHS)

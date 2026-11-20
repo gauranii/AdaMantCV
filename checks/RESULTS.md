@@ -93,17 +93,17 @@ marks in the two PDF files. 30 of 30 checks OK.
 | Fig 3B | bars: count, spread of height ratios, same empty bins | 62/62, 0.0006, True | OK |
 | Fig 3C | bars: count, spread of height ratios, same empty bins | 56/56, 0.0010, True | OK |
 | Fig 3D | bars: count, spread of height ratios, same empty bins | 70/70, 0.0012, True | OK |
-| Fig 7 | Power223: points, largest offset after scaling (pt) | 2500, 0.009 | OK |
-| Fig 7 | Power22: points, largest offset after scaling (pt) | 2500, 0.009 | OK |
-| Fig 7 | Power25: points, largest offset after scaling (pt) | 2500, 0.009 | OK |
-| Fig 7 | GCV223: points, largest offset after scaling (pt) | 275, 0.008 | OK |
-| Fig 7 | GCV22: points, largest offset after scaling (pt) | 166, 0.009 | OK |
-| Fig 7 | GCV25: points, largest offset after scaling (pt) | 274, 0.009 | OK |
-| Fig 8 | Power191s0.5: points, largest offset after scaling (pt) | 2500, 0.008 | OK |
-| Fig 8 | Power184s0.5: points, largest offset after scaling (pt) | 2500, 0.009 | OK |
-| Fig 8 | Power160s0.5: points, largest offset after scaling (pt) | 2500, 0.031 | OK |
-| Fig 8 | GCV191: points, largest offset after scaling (pt) | 162, 0.009 | OK |
-| Fig 8 | GCV184: points, largest offset after scaling (pt) | 158, 0.008 | OK |
-| Fig 8 | GCV160: points, largest offset after scaling (pt) | 175, 0.008 | OK |
+| Fig 7A | power-decreasing_F3-FT8-beta: points, largest offset after scaling (pt) | 2500, 0.009 | OK |
+| Fig 7B | power-decreasing_Iz-Oz-delta: points, largest offset after scaling (pt) | 2500, 0.009 | OK |
+| Fig 7C | power-decreasing_CPz-AF4-delta: points, largest offset after scaling (pt) | 2500, 0.009 | OK |
+| Fig 7D | GCV_F3-FT8-beta: points, largest offset after scaling (pt) | 275, 0.008 | OK |
+| Fig 7E | GCV_Iz-Oz-delta: points, largest offset after scaling (pt) | 166, 0.009 | OK |
+| Fig 7F | GCV_CPz-AF4-delta: points, largest offset after scaling (pt) | 274, 0.009 | OK |
+| Fig 8A | power-increasing_FC3-P7-beta: points, largest offset after scaling (pt) | 2500, 0.008 | OK |
+| Fig 8B | power-increasing_F3-O2-alpha: points, largest offset after scaling (pt) | 2500, 0.009 | OK |
+| Fig 8C | power-increasing_Pz-PO4-alpha: points, largest offset after scaling (pt) | 2500, 0.031 | OK |
+| Fig 8D | GCV_FC3-P7-beta: points, largest offset after scaling (pt) | 162, 0.009 | OK |
+| Fig 8E | GCV_F3-O2-alpha: points, largest offset after scaling (pt) | 158, 0.008 | OK |
+| Fig 8F | GCV_Pz-PO4-alpha: points, largest offset after scaling (pt) | 175, 0.008 | OK |
 | Fig 1A | minimum points vs computed minima, largest offset (pt) | 10, 0.006 | OK |
 | Fig 1B | minimum points vs computed minima, largest offset (pt) | 10, 0.005 | OK |

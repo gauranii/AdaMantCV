@@ -7,7 +7,8 @@
 #          for the ten clinical variables of the liver toxicity data, with 50
 #          randomly chosen genes (A) and with all 3116 genes (B).
 # Inputs:  data/liver/mixOmicsData.csv.
-# Outputs: figures/fig1a_liver_cv_subset.pdf, figures/fig1b_liver_cv_full.pdf,
+# Outputs: figures/Fig1A_liver_ridge-CV-error_p50-random-genes.pdf,
+#          figures/Fig1B_liver_ridge-CV-error_p3116-all-genes.pdf,
 #          results/fig1_minima.csv.
 # Usage:   Rscript scripts/fig1_liver_cv.R
 # Source:  fig1/CV Ridge.R.
@@ -40,9 +41,9 @@ invisible(sample(seq_len(n_genes), SUBSET_SIZE, replace = FALSE))
 skip_fold_assignments(FULL_SKIPPED_FOLDS, nrow(liver$X), N_FOLDS)
 full_curves <- cv_curves(liver$X, liver$Y, FULL_LAMBDAS, N_FOLDS)
 
-save_figure(cv_plot(subset_curves, MSE_AXIS_MAX), "fig1a_liver_cv_subset.pdf",
+save_figure(cv_plot(subset_curves, MSE_AXIS_MAX), "Fig1A_liver_ridge-CV-error_p50-random-genes.pdf",
             PATHS$figures, PAPER$figure_size)
-save_figure(cv_plot(full_curves, MSE_AXIS_MAX), "fig1b_liver_cv_full.pdf",
+save_figure(cv_plot(full_curves, MSE_AXIS_MAX), "Fig1B_liver_ridge-CV-error_p3116-all-genes.pdf",
             PATHS$figures, PAPER$figure_size)
 write.csv(rbind(cv_minima(subset_curves, "A"), cv_minima(full_curves, "B")),
           output_file(PATHS$results, "fig1_minima.csv"), row.names = FALSE)

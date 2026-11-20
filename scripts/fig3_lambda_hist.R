@@ -9,7 +9,8 @@
 #          (C, D), with tau = Q1 (A, C) and tau = Q2 (B, D).
 # Inputs:  archive/run0204b/fig3_lambdas.csv (chosen penalties of the archived
 #          run); none with --rerun (simulated data).
-# Outputs: figures/fig3{a,b,c,d}_lambda_hist.pdf;
+# Outputs: figures/Fig3{A,B}_simulation_lambda-histogram_null_threshold-{Q1,median}.pdf,
+#          figures/Fig3{C,D}_simulation_lambda-histogram_alternative_threshold-{Q1,median}.pdf;
 #          with --rerun also results/fig3_lambdas_<settings>.csv.
 # Usage:   Rscript scripts/fig3_lambda_hist.R [--rerun] [--perms=1000] [--negative=50]
 #          [--positive=200] [--cores=4]
@@ -27,6 +28,9 @@ BIN_WIDTH   <- 0.25
 PANELS <- data.frame(panel = c("a", "b", "c", "d"),
                      beta_type = c("zero", "zero", "fixed", "fixed"),
                      tau = c("Q1", "Q2", "Q1", "Q2"))
+# Words of the file names
+HYPOTHESIS <- c(zero = "null", fixed = "alternative")
+THRESHOLD  <- c(Q1 = "Q1", Q2 = "median")
 
 opts <- parse_args(test_options(PAPER))
 
@@ -38,6 +42,8 @@ lambdas <- lambdas[lambdas$b >= 2, ]
 for (i in seq_len(nrow(PANELS))) {
   hist <- penalty_histogram(lambdas[lambdas$panel == PANELS$panel[i], ], PANELS$tau[i],
                             BIN_WIDTH)
-  save_figure(hist, sprintf("fig3%s_lambda_hist.pdf", PANELS$panel[i]), PATHS$figures,
-              PAPER$figure_size)
+  name <- sprintf("Fig3%s_simulation_lambda-histogram_%s_threshold-%s.pdf",
+                  toupper(PANELS$panel[i]), HYPOTHESIS[[PANELS$beta_type[i]]],
+                  THRESHOLD[[PANELS$tau[i]]])
+  save_figure(hist, name, PATHS$figures, PAPER$figure_size)
 }

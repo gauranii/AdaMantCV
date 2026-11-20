@@ -7,8 +7,8 @@
 #          in 12 simulated settings with no association (beta = 0).
 # Inputs:  archive/run0204b/table1_pvalues.csv (p-values of the 500 replications
 #          of the archived run); none with --rerun (simulated data).
-# Outputs: results/table1_type1_error.csv (the table); with --rerun also
-#          results/table1_type1_error_<settings>/scenarioSS_runRRRR.csv.
+# Outputs: results/Table1_type1-error.csv (the table); with --rerun also
+#          results/Table1_type1-error_<settings>/scenarioSS_runRRRR.csv.
 # Usage:   python python/scripts/table1_type1_error.py [--rerun] [--runs=500] [--scenarios=all]
 #          [--perms=1000] [--negative=50] [--positive=200] [--cores=4]
 #          --rerun: run the replications here instead of reading the archive.
@@ -26,4 +26,4 @@ from adamant.simulation import simulation_study  # noqa: E402
 
 opts = parse_args({"runs": "500", "scenarios": "all", **test_options(PAPER)})
 
-simulation_study("table1_type1_error", "zero", opts, PAPER, PATHS)
+simulation_study("Table1_type1-error", "zero", opts, PAPER, PATHS)

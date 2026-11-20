@@ -7,8 +7,8 @@
 #          in 12 simulated settings with no association (beta = 0).
 # Inputs:  archive/run0204b/table1_pvalues.csv (p-values of the 500 replications
 #          of the archived run); none with --rerun (simulated data).
-# Outputs: results/table1_type1_error.csv (the table); with --rerun also
-#          results/table1_type1_error_<settings>/scenarioSS_runRRRR.csv.
+# Outputs: results/Table1_type1-error.csv (the table); with --rerun also
+#          results/Table1_type1-error_<settings>/scenarioSS_runRRRR.csv.
 # Usage:   Rscript scripts/table1_type1_error.R [--rerun] [--runs=500] [--scenarios=all]
 #          [--perms=1000] [--negative=50] [--positive=200] [--cores=4]
 #          --rerun: run the replications here instead of reading the archive.
@@ -21,4 +21,4 @@ source("R/setup.R")
 
 opts <- parse_args(c(list(runs = "500", scenarios = "all"), test_options(PAPER)))
 
-simulation_study("table1_type1_error", beta_type = "zero", opts, PAPER, PATHS)
+simulation_study("Table1_type1-error", beta_type = "zero", opts, PAPER, PATHS)

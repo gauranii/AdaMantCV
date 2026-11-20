@@ -58,22 +58,26 @@ heat_map <- function(curves, column, midpoint, digits, zero_position, text_size)
 #' Save the two heat maps of a figure: mean -log10 p-value (panel A) and
 #' power (panel B).
 #'
-#' @param figure Prefix of the file names (for example "fig5").
-#' @param suffix End of the file names (for example "eeg_heat.pdf").
+#' The files are named <figure>A_<subject>_heatmap_mean-log10-pvalue<tail>.pdf
+#' and <figure>B_<subject>_heatmap_power<tail>.pdf.
+#'
+#' @param figure Figure of the paper (for example "Fig5").
+#' @param subject Data shown ("liver" or "EEG").
+#' @param tail End of the file names ("" or for example "_top-triples").
 #' @param curves Named list of curve tables.
 #' @param power_column Column shown in panel B.
 #' @param midpoints White points of the colour scales, `c(logp = , power = )`.
 #' @param digits,zero_position,text_size As for `heat_map()`.
 #' @param figures_dir,size As for `save_figure()`.
 #' @return NULL, invisibly.
-save_heat_maps <- function(figure, suffix, curves, power_column, midpoints, digits,
+save_heat_maps <- function(figure, subject, tail, curves, power_column, midpoints, digits,
                            zero_position, text_size, figures_dir, size) {
   save_figure(heat_map(curves, "ave_logpval", midpoints[["logp"]], digits, zero_position,
                        text_size),
-              sprintf("%sa_logp_%s", figure, suffix), figures_dir, size)
+              sprintf("%sA_%s_heatmap_mean-log10-pvalue%s.pdf", figure, subject, tail), figures_dir, size)
   save_figure(heat_map(curves, power_column, midpoints[["power"]], digits, zero_position,
                        text_size),
-              sprintf("%sb_power_%s", figure, suffix), figures_dir, size)
+              sprintf("%sB_%s_heatmap_power%s.pdf", figure, subject, tail), figures_dir, size)
 }
 
 #' Points of one column of a curve table against the penalty, coloured by the
@@ -93,23 +97,31 @@ sign_scatter <- function(table, column, label) {
 #' Save the power panel (all penalties) and the GCV panel (a window of
 #' penalties) of several triples.
 #'
-#' @param figure Prefix of the file names (for example "fig7").
+#' The power panels take the first panel letters and the GCV panels the next:
+#' <figure><letter>_EEG_power-<trend>_<triple name>.pdf and
+#' <figure><letter>_EEG_GCV_<triple name>.pdf.
+#'
+#' @param figure Figure of the paper (for example "Fig7").
+#' @param trend Trend of the power in the file names ("decreasing" or
+#'   "increasing").
 #' @param windows Data frame with columns `triple`, `first`, `last`, `y_max`:
 #'   the GCV panel shows rows `first` to `last` of the curve table, without
 #'   the rows with gcv above `y_max`.
-#' @param curves List of curve tables, one per row of `windows`.
+#' @param curves List of curve tables, one per row of `windows`, named
+#'   "<channel1>-<channel2>-<band>" as by `eeg_curves()`.
 #' @param figures_dir,size As for `save_figure()`.
 #' @return NULL, invisibly.
-save_power_gcv_panels <- function(figure, windows, curves, figures_dir, size) {
-  for (i in seq_len(nrow(windows))) {
+save_power_gcv_panels <- function(figure, trend, windows, curves, figures_dir, size) {
+  n <- nrow(windows)
+  for (i in seq_len(n)) {
     w <- windows[i, ]
     table <- curves[[i]]
     save_figure(sign_scatter(table, "power", "power"),
-                sprintf("%s_power_%d.pdf", figure, w$triple), figures_dir, size)
+                sprintf("%s%s_EEG_power-%s_%s.pdf", figure, LETTERS[i], trend, names(curves)[i]), figures_dir, size)
     shown <- table[intersect(w$first:w$last, seq_len(nrow(table))), ]
     save_figure(sign_scatter(shown[shown$gcv <= w$y_max, ], "gcv",
                              "Generalized Cross Validation"),
-                sprintf("%s_gcv_%d.pdf", figure, w$triple), figures_dir, size)
+                sprintf("%s%s_EEG_GCV_%s.pdf", figure, LETTERS[n + i], names(curves)[i]), figures_dir, size)
   }
 }
 

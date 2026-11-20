@@ -38,15 +38,15 @@ PAPER = {
 def project_paths(root, data=None, output=None):
     """Folders and files of the project.
 
-    Parameters: root (repository root), data (folder of the raw data; its
-    subfolder eeg/ holds the EEG files; ADAMANT_DATA by default), output
-    (folder in which results/ and figures/ are written; ADAMANT_OUTPUT by
+    Parameters: root (repository root), data (folder of the data; its
+    subfolder 04_coherence_SNPs/ holds the EEG files; ADAMANT_DATA by
+    default), output (folder in which results/ and figures/ are written; ADAMANT_OUTPUT by
     default).
     Returns: dict of paths: eeg, liver, reference, archive, results, figures.
     """
     data = data or os.environ.get("ADAMANT_DATA", os.path.join(root, "data"))
     output = output or os.environ.get("ADAMANT_OUTPUT", root)
-    return {"eeg": os.path.join(data, "eeg"),
+    return {"eeg": os.path.join(data, "04_coherence_SNPs"),
             "liver": os.path.join(root, "data", "liver", "mixOmicsData.csv"),
             "reference": os.path.join(root, "reference"),
             "archive": os.path.join(root, "archive"),

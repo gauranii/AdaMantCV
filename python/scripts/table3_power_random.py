@@ -7,8 +7,8 @@
 #          (coefficients drawn from N(1, 0.5)).
 # Inputs:  archive/run0204b/table3_pvalues.csv (p-values of the 500 replications
 #          of the archived run); none with --rerun (simulated data).
-# Outputs: results/table3_power_random.csv (the table); with --rerun also
-#          results/table3_power_random_<settings>/scenarioSS_runRRRR.csv.
+# Outputs: results/Table3_power_random-effects.csv (the table); with --rerun also
+#          results/Table3_power_random-effects_<settings>/scenarioSS_runRRRR.csv.
 # Usage:   python python/scripts/table3_power_random.py [--rerun] [--runs=500] [--scenarios=all]
 #          [--perms=1000] [--negative=50] [--positive=200] [--cores=4]
 #          --rerun: run the replications here instead of reading the archive.
@@ -26,4 +26,4 @@ from adamant.simulation import simulation_study  # noqa: E402
 
 opts = parse_args({"runs": "500", "scenarios": "all", **test_options(PAPER)})
 
-simulation_study("table3_power_random", "random", opts, PAPER, PATHS)
+simulation_study("Table3_power_random-effects", "random", opts, PAPER, PATHS)

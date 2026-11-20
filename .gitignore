@@ -57,7 +57,7 @@ po/*~
 rsconnect/
 
 # Subject-level data and generated outputs of the paper scripts
-/data/eeg/
+/data/04_coherence_SNPs/
 /results/
 /figures/
 /result

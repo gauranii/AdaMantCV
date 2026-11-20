@@ -40,17 +40,17 @@ EEG = {"fig5": [160, 248, 191, 183, 184, 220, 148, 177, 22, 157, 31, 151],
        "fig6": [181, 231, 200, 144, 159, 136, 223, 205, 25, 179, 219, 123],
        "fig7": [223, 22, 25], "fig8": [191, 184, 160]}
 OUTPUTS = {
-    "table1": ("table1_type1_error", ["results/table1_type1_error*"]),
-    "table2": ("table2_power_fixed", ["results/table2_power_fixed*"]),
-    "table3": ("table3_power_random", ["results/table3_power_random*"]),
-    "table4": ("table4_eeg_pvalues", ["results/table4_eeg_pvalues*"]),
-    "fig1": ("fig1_liver_cv", ["results/fig1_*", "plot_data/fig1*"]),
-    "fig2": ("fig2_liver_heat", ["results/*_liver*", "plot_data/fig2*"]),
-    "fig3": ("fig3_lambda_hist", ["results/fig3_*", "plot_data/fig3*"]),
-    "fig5": ("fig5_eeg_heat", ["plot_data/fig5*"]),
-    "fig6": ("fig6_eeg_heat", ["plot_data/fig6*"]),
-    "fig7": ("fig7_power_gcv_decreasing", ["plot_data/fig7*"]),
-    "fig8": ("fig8_power_gcv_increasing", ["plot_data/fig8*"]),
+    "table1": ("table1_type1_error", ["results/Table1_*"]),
+    "table2": ("table2_power_fixed", ["results/Table2_*"]),
+    "table3": ("table3_power_random", ["results/Table3_*"]),
+    "table4": ("table4_eeg_pvalues", ["results/Table4_*"]),
+    "fig1": ("fig1_liver_cv", ["results/fig1_*", "plot_data/Fig1*"]),
+    "fig2": ("fig2_liver_heat", ["results/*_liver*", "plot_data/Fig2*"]),
+    "fig3": ("fig3_lambda_hist", ["results/fig3_*", "plot_data/Fig3*"]),
+    "fig5": ("fig5_eeg_heat", ["plot_data/Fig5*"]),
+    "fig6": ("fig6_eeg_heat", ["plot_data/Fig6*"]),
+    "fig7": ("fig7_power_gcv_decreasing", ["plot_data/Fig7*"]),
+    "fig8": ("fig8_power_gcv_increasing", ["plot_data/Fig8*"]),
 }
 for figure, triples in EEG.items():
     runs = "runs3_" if figure in ("fig5", "fig6") else "runs1000_"

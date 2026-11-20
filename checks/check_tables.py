@@ -4,7 +4,7 @@
 # Purpose: Compare every cell of Tables 1 to 4 written by the table scripts
 #          with the number printed in the paper (three decimals).
 # Usage:   python3 checks/check_tables.py <results dir> <checks output dir>
-# Inputs:  checks/paper_values.csv, <results dir>/table<N>_*.csv.
+# Inputs:  checks/paper_values.csv, <results dir>/Table<N>_*.csv.
 # Outputs: <checks output dir>/tables.csv; prints one line per table; exit
 #          status 1 unless every cell is equal.
 # -----------------------------------------------------------------------------
@@ -14,8 +14,8 @@ import sys
 
 results, out = sys.argv[1:3]
 here = os.path.dirname(os.path.abspath(__file__))
-FILES = {'1': 'table1_type1_error', '2': 'table2_power_fixed', '3': 'table3_power_random',
-         '4': 'table4_eeg_pvalues'}
+FILES = {'1': 'Table1_type1-error', '2': 'Table2_power_fixed-effects',
+         '3': 'Table3_power_random-effects', '4': 'Table4_EEG_pvalues'}
 COLUMN = {'gcv': 'gcv', 'loo': 'loocv', 'ga_gcv': 'ga_gcv', 'ga_loo': 'ga_loocv'}
 COVARIANCE = {'CS': 'CS', 'Het': 'Heteroskedastic'}
 

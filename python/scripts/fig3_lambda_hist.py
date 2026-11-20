@@ -9,7 +9,8 @@
 #          (C, D), with tau = Q1 (A, C) and tau = Q2 (B, D).
 # Inputs:  archive/run0204b/fig3_lambdas.csv (chosen penalties of the archived
 #          run); none with --rerun (simulated data).
-# Outputs: figures/fig3{a,b,c,d}_lambda_hist.pdf;
+# Outputs: figures/Fig3{A,B}_simulation_lambda-histogram_null_threshold-{Q1,median}.pdf,
+#          figures/Fig3{C,D}_simulation_lambda-histogram_alternative_threshold-{Q1,median}.pdf;
 #          with --rerun also results/fig3_lambdas_<settings>.csv.
 # Usage:   python python/scripts/fig3_lambda_hist.py [--rerun] [--perms=1000] [--negative=50]
 #          [--positive=200] [--cores=4]
@@ -34,6 +35,9 @@ BIN_WIDTH = 0.25
 PANELS = pd.DataFrame({"panel": ["a", "b", "c", "d"],
                        "beta_type": ["zero", "zero", "fixed", "fixed"],
                        "tau": ["Q1", "Q2", "Q1", "Q2"]})
+# Words of the file names
+HYPOTHESIS = {"zero": "null", "fixed": "alternative"}
+THRESHOLD = {"Q1": "Q1", "Q2": "median"}
 
 opts = parse_args(test_options(PAPER))
 
@@ -42,6 +46,8 @@ lambdas = chosen_penalties(PANELS, REPLICATION, DIMENSION, COVARIANCE, opts, PAP
 # The histograms show the permutations (b = 1 is the observed data).
 lambdas = lambdas[lambdas["b"] >= 2]
 
-for panel, tau in zip(PANELS["panel"], PANELS["tau"]):
+for panel, beta_type, tau in PANELS.itertuples(index=False):
     hist = penalty_histogram(lambdas[lambdas["panel"] == panel], tau, BIN_WIDTH)
-    save_figure(hist, f"fig3{panel}_lambda_hist.pdf", PATHS["figures"], PAPER["figure_size"])
+    name = (f"Fig3{panel.upper()}_simulation_lambda-histogram_{HYPOTHESIS[beta_type]}"
+            f"_threshold-{THRESHOLD[tau]}.pdf")
+    save_figure(hist, name, PATHS["figures"], PAPER["figure_size"])

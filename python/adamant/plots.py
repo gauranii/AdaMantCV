@@ -209,13 +209,17 @@ def heat_map(curves, column, midpoint, digits, zero_position, text_size):
     return plot
 
 
-def save_heat_maps(figure, suffix, curves, power_column, midpoints, digits, zero_position,
+def save_heat_maps(figure, subject, tail, curves, power_column, midpoints, digits, zero_position,
                    text_size, figures_dir, size):
     """Save the two heat maps of a figure: mean -log10 p-value (panel A) and
     power (panel B).
 
-    Parameters: figure (prefix of the file names, for example "fig5"),
-    suffix (end of the file names, for example "eeg_heat.pdf"), curves (dict
+    The files are named <figure>A_<subject>_heatmap_mean-log10-pvalue<tail>.pdf
+    and <figure>B_<subject>_heatmap_power<tail>.pdf.
+
+    Parameters: figure (figure of the paper, for example "Fig5"), subject
+    (data shown, "liver" or "EEG"), tail (end of the file names, "" or for
+    example "_top-triples"), curves (dict
     of curve tables), power_column (column shown in panel B), midpoints
     (white points of the colour scales, dict with logp and power), digits,
     zero_position, text_size (as for `heat_map()`), figures_dir, size (as
@@ -223,10 +227,10 @@ def save_heat_maps(figure, suffix, curves, power_column, midpoints, digits, zero
     """
     save_figure(heat_map(curves, "ave_logpval", midpoints["logp"], digits, zero_position,
                          text_size),
-                f"{figure}a_logp_{suffix}", figures_dir, size)
+                f"{figure}A_{subject}_heatmap_mean-log10-pvalue{tail}.pdf", figures_dir, size)
     save_figure(heat_map(curves, power_column, midpoints["power"], digits, zero_position,
                          text_size),
-                f"{figure}b_power_{suffix}", figures_dir, size)
+                f"{figure}B_{subject}_heatmap_power{tail}.pdf", figures_dir, size)
 
 
 def sign_scatter(table, column, label):
@@ -250,23 +254,30 @@ def sign_scatter(table, column, label):
     return plot
 
 
-def save_power_gcv_panels(figure, windows, curves, figures_dir, size):
+def save_power_gcv_panels(figure, trend, windows, curves, figures_dir, size):
     """Save the power panel (all penalties) and the GCV panel (a window of
     penalties) of several triples.
 
-    Parameters: figure (prefix of the file names, for example "fig7"),
+    The power panels take the first panel letters and the GCV panels the
+    next: <figure><letter>_EEG_power-<trend>_<triple name>.pdf and
+    <figure><letter>_EEG_GCV_<triple name>.pdf.
+
+    Parameters: figure (figure of the paper, for example "Fig7"), trend
+    (trend of the power in the file names, "decreasing" or "increasing"),
     windows (DataFrame with columns triple, first, last, y_max: the GCV
     panel shows rows first to last of the curve table, without the rows with
-    gcv above y_max), curves (list of curve tables, one per row of
-    `windows`), figures_dir, size (as for `save_figure()`). Returns: None.
+    gcv above y_max), curves (dict of curve tables, one per row of
+    `windows`, keyed "<channel1>-<channel2>-<band>" as by `eeg_curves()`), figures_dir, size (as for `save_figure()`). Returns: None.
     """
-    for w, table in zip(windows.to_dict("records"), curves):
+    n = len(windows)
+    letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+    for i, (w, (name, table)) in enumerate(zip(windows.to_dict("records"), curves.items())):
         save_figure(sign_scatter(table, "power", "power"),
-                    f"{figure}_power_{w['triple']}.pdf", figures_dir, size)
+                    f"{figure}{letters[i]}_EEG_power-{trend}_{name}.pdf", figures_dir, size)
         shown = table.iloc[w["first"] - 1:min(w["last"], len(table))]
         save_figure(sign_scatter(shown[shown["gcv"] <= w["y_max"]], "gcv",
                                  "Generalized Cross Validation"),
-                    f"{figure}_gcv_{w['triple']}.pdf", figures_dir, size)
+                    f"{figure}{letters[n + i]}_EEG_GCV_{name}.pdf", figures_dir, size)
 
 
 def histogram_bins(values, x_range, bin_width):

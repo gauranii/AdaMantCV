@@ -7,8 +7,9 @@
 #          against the ridge penalty for three EEG triples whose power
 #          decreases with the penalty.
 # Inputs:  archive/coh7/curves_eeg<k>.csv.gz for the three triples, reference/*.csv;
-#          with --rerun <data>/eeg/dat_ch<k>.csv instead of the archive.
-# Outputs: figures/fig7_{power,gcv}_<k>.pdf;
+#          with --rerun <data>/04_coherence_SNPs/dat_ch<k>.csv instead of the archive.
+# Outputs: figures/Fig7{A,B,C}_EEG_power-decreasing_<channel>-<channel>-<band>.pdf,
+#          figures/Fig7{D,E,F}_EEG_GCV_<channel>-<channel>-<band>.pdf;
 #          with --rerun also results/power_eeg<k>_<settings>.csv and
 #          results/gcv_eeg<k>_<grid>.csv (shared by Figures 5 to 8).
 # Usage:   Rscript scripts/fig7_power_gcv_decreasing.R [--rerun] [--runs=1000] [--perms=1000]
@@ -29,5 +30,5 @@ GCV_WINDOWS <- data.frame(triple = c(223, 22, 25),
 
 opts <- parse_args(curve_options(EEG_GRID, PAPER))
 
-save_power_gcv_panels("fig7", GCV_WINDOWS, eeg_curves(GCV_WINDOWS$triple, opts, PAPER, PATHS),
+save_power_gcv_panels("Fig7", "decreasing", GCV_WINDOWS, eeg_curves(GCV_WINDOWS$triple, opts, PAPER, PATHS),
                       PATHS$figures, PAPER$figure_size)

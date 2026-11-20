@@ -6,7 +6,7 @@
 # Purpose: AdaMantCV tests of the association between SNPs and EEG coherence
 #          for a set of triples, from the archived run or recomputed.
 # Inputs:  archive/real0210a/table4_pvalues.csv; in a rerun
-#          <data>/eeg/dat_ch<k>.csv and reference/table4_cluster_lambda0.csv.
+#          <data>/04_coherence_SNPs/dat_ch<k>.csv and reference/table4_cluster_lambda0.csv.
 # Outputs: None.
 # Usage:   source("R/setup.R"); eeg_tests(c(11, 27), 0.5, opts, PAPER, PATHS)
 # Source:  real0210a: R_ch11.R, R_driver.R; PctRk_<k>q_0.5.csv (original run).

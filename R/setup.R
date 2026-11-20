@@ -34,14 +34,15 @@ PAPER <- list(
 #' Folders and files of the project.
 #'
 #' @param root Repository root.
-#' @param data Folder of the raw data; its subfolder eeg/ holds the EEG files.
+#' @param data Folder of the data; its subfolder 04_coherence_SNPs/ holds the
+#'   EEG files.
 #' @param output Folder in which results/ and figures/ are written.
 #' @return Named list of paths: `eeg`, `liver`, `reference`, `archive`,
 #'   `results`, `figures`.
 project_paths <- function(root,
                           data = Sys.getenv("ADAMANT_DATA", file.path(root, "data")),
                           output = Sys.getenv("ADAMANT_OUTPUT", root)) {
-  list(eeg       = file.path(data, "eeg"),
+  list(eeg       = file.path(data, "04_coherence_SNPs"),
        liver     = file.path(root, "data", "liver", "mixOmicsData.csv"),
        reference = file.path(root, "reference"),
        archive   = file.path(root, "archive"),

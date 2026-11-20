@@ -7,8 +7,9 @@
 #          ridge-penalized Mantel test over the ridge penalties, for the 12
 #          EEG triples with weak association.
 # Inputs:  archive/coh7/curves_eeg<k>.csv.gz for the 12 triples, reference/*.csv;
-#          with --rerun <data>/eeg/dat_ch<k>.csv instead of the archive.
-# Outputs: figures/fig6{a_logp,b_power}_eeg_heat.pdf;
+#          with --rerun <data>/04_coherence_SNPs/dat_ch<k>.csv instead of the archive.
+# Outputs: figures/Fig6A_EEG_heatmap_mean-log10-pvalue_other-triples.pdf,
+#          figures/Fig6B_EEG_heatmap_power_other-triples.pdf;
 #          with --rerun also results/power_eeg<k>_<settings>.csv and
 #          results/gcv_eeg<k>_<grid>.csv (shared by Figures 5 to 8).
 # Usage:   Rscript scripts/fig6_eeg_heat.R [--rerun] [--runs=1000] [--perms=1000]
@@ -28,6 +29,6 @@ AXIS_TEXT_SIZE <- 8
 
 opts <- parse_args(curve_options(EEG_GRID, PAPER))
 
-save_heat_maps("fig6", "eeg_heat.pdf", eeg_curves(TRIPLES, opts, PAPER, PATHS), "power",
+save_heat_maps("Fig6", "EEG", "_other-triples", eeg_curves(TRIPLES, opts, PAPER, PATHS), "power",
                MIDPOINTS, LAMBDA_DIGITS, opts$negative, AXIS_TEXT_SIZE,
                PATHS$figures, PAPER$figure_size)

@@ -6,7 +6,7 @@
 # Purpose: Read the EEG coherence / SNP data and the liver toxicity data,
 #          label the EEG triples, and get their power and cross-validation
 #          curves, from the archived runs or recomputed.
-# Inputs:  <data>/eeg/dat_ch<k>.csv, data/liver/mixOmicsData.csv,
+# Inputs:  <data>/04_coherence_SNPs/dat_ch<k>.csv, data/liver/mixOmicsData.csv,
 #          reference/triple.csv, reference/chan_names.csv,
 #          archive/coh7/curves_eeg<k>.csv.gz, archive/liver/curves_liver<j>.csv.gz.
 # Outputs: None.
