@@ -120,6 +120,16 @@
         // {
           all = app pkgs "all" (lib.attrValues scripts);
           py-all = pyApp pkgs "all" (lib.attrValues scripts);
+          versions = {
+            type = "app";
+            program = "${pkgs.writeShellScript "adamantcv-versions" ''
+              export PATH=${rEnv pkgs}/bin:${pyEnv pkgs}/bin:$PATH
+              export ADAMANT_BLAS=${blasLibrary pkgs}
+              cd ${self}
+              exec bash checks/versions.sh "$@"
+            ''}";
+            meta.description = "Print the software versions";
+          };
         }
       );
 
@@ -145,7 +155,8 @@
         # scripts and compare the two, and compare the random numbers,
         # pgamma and the cross-validated ridge regression of the Python
         # code with R; the result is the comparison (checks/PYTHON.md, with
-        # the stored comparison of the reruns).
+        # the stored comparison of the reruns). Also compare the software
+        # versions with those listed in README.md.
         python =
           pkgs.runCommand "adamantcv-python"
             {
@@ -163,6 +174,7 @@
               python python/tests/test_rng.py
               python python/tests/test_rmath.py
               python python/tests/test_glmnet.py quick
+              bash checks/versions.sh --check
               cp $TMPDIR/PYTHON.md $out
             '';
       });
