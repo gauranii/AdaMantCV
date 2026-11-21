@@ -1,0 +1,6 @@
+# Language bar on GitHub: count the R and Python code, not the data or papers
+*.py linguist-language=Python
+*.R  linguist-language=R
+checks/** linguist-detectable=true
+*.csv linguist-detectable=false
+*.pdf linguist-generated=true
