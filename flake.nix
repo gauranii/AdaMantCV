@@ -250,7 +250,7 @@
         # pgamma and the cross-validated ridge regression of the Python
         # code with R; the result is the comparison (checks/PYTHON.md, with
         # the stored comparison of the reruns). Also compare the software
-        # versions with those listed in README.md.
+        # versions with those listed in docs/DETAILS.md.
         python =
           pkgs.runCommand "adamantcv-python"
             {

@@ -4,7 +4,7 @@
 # Purpose: Continuous integration: run `nix flake check` on every push and
 #          pull request. The check builds every table and figure from the
 #          archived runs, compares them with the paper, compares the R and
-#          the Python outputs, and runs the unit tests of both (README.md,
+#          the Python outputs, and runs the unit tests of both (docs/DETAILS.md,
 #          sections Running and Tests). No private data is needed.
 # -----------------------------------------------------------------------------
 name: CI

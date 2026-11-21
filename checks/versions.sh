@@ -7,9 +7,11 @@
 #          of pyEnv in flake.nix, and the BLAS and LAPACK library.
 # Usage:   bash checks/versions.sh            print the versions
 #          bash checks/versions.sh --check    compare them with the section
-#                                             "Software versions" of README.md
+#                                             "Software versions" of
+#                                             docs/DETAILS.md
 #          Run from the repository root, inside `nix develop`.
-# Outputs: prints the versions; with --check exit status 1 if README.md differs.
+# Outputs: prints the versions; with --check exit status 1 if docs/DETAILS.md
+#          differs.
 # -----------------------------------------------------------------------------
 set -euo pipefail
 
@@ -40,7 +42,7 @@ PY
 if [ "${1:-}" = --check ]; then
   diff <(versions) <(awk '/^## Software versions/ { section = 1 }
                           section && /^```/ { block++; next }
-                          section && block == 1 { print }' README.md)
+                          section && block == 1 { print }' docs/DETAILS.md)
 else
   versions
 fi
