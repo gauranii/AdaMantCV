@@ -118,8 +118,7 @@ from the stream it is given, as `glmnet::cv.glmnet()` does; its script
 ### Continuous integration
 
 `.github/workflows/ci.yml` runs `nix flake check` on every push and pull
-request (Ubuntu, Nix installed by `cachix/install-nix-action`). The repository
-is not on GitHub yet, so the workflow runs from the first push.
+request (Ubuntu, Nix installed by `cachix/install-nix-action`).
 
 ## Outputs
 
