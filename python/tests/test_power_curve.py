@@ -2,8 +2,9 @@
 # File:    python/tests/test_power_curve.py
 # Paper:   Gauran, Xue, Chen, Ombao, Yu (2022). Front. Neurosci. 16:836100.
 # Purpose: Unit tests of python/adamant/power_curve.py: one replication rebuilt from its seed,
-#          the power of a response with and without signal, the
-#          cross-validation curve and the stored curve table; the cases of
+#          the mean and sd of -log10(p), the power of a response with and
+#          without signal, the cross-validation curve and the stored curve
+#          table; the cases of
 #          tests/testthat/test-power_curve.R.
 # Inputs:  None (files are written to temporary folders).
 # Outputs: None.
@@ -16,7 +17,8 @@ import numpy as np
 import pandas as pd
 
 from adamant import mantel, rng
-from adamant.power_curve import CURVE_COLUMNS, curve_table, gcv_curve, power_curve, power_run
+from adamant.power_curve import (CURVE_COLUMNS, curve_table, gcv_curve, minus_log10_moments,
+                                 power_curve, power_run)
 from adamant.ridge_cv import ridge_cv
 from inputs import SMALL_OPTS, SMALL_SETTINGS, close, seeded_matrix
 
@@ -51,6 +53,34 @@ def test_power_run_is_the_replication_of_seed_plus_10_times_run():
     # permuting the rows of U is permuting the response
     close(Z[:, 1], X_svd["u"].T @ Y[np.argsort(rows[0])])
     close(power_run(2, X_svd["u"], weights, lambdas, y, 0.5, 9, 100, exact=True), p)
+
+
+def test_minus_log10_moments_are_the_mean_and_sd_of_every_column():
+    # columns of -log10(p): (1, 3, 2), (0, 2) with one missing value, a
+    # single value 1, and no value at all
+    p = np.array([[0.1, 1.0, np.nan, np.nan],
+                  [0.001, np.nan, 0.1, np.nan],
+                  [0.01, 0.01, np.nan, np.nan]])
+    centre, spread = minus_log10_moments(p, 0)
+    close(centre[:3], [2, 1, 1])
+    close(spread[:2], [1, math.sqrt(2)])
+    assert math.isnan(spread[2])                       # sd of one value
+    assert math.isnan(centre[3]) and math.isnan(spread[3])
+    # the shift is added before the logarithm: p = 0 gives -log10(shift)
+    centre, spread = minus_log10_moments(np.zeros((4, 2)), 0.01)
+    close(centre, [2, 2])
+    close(spread, [0, 0])
+    # p-values without a pattern, against numpy
+    p = 1 / (1 + np.exp(seeded_matrix(9, 4, seed=32)))
+    p[2, 1] = p[5, 1] = p[0, 3] = np.nan
+    centre, spread = minus_log10_moments(p, 1e-3)
+    values = -np.log10(p + 1e-3)
+    close(centre, np.nanmean(values, axis=0))
+    close(spread, np.nanstd(values, axis=0, ddof=1))
+    # a Fortran-ordered matrix and a list give the same
+    again = minus_log10_moments(np.asfortranarray(p), 1e-3)
+    assert np.array_equal(again[0], centre) and np.array_equal(again[1], spread)
+    close(minus_log10_moments([[0.1], [0.001]], 0)[0], [2])
 
 
 def test_power_curve_has_one_row_per_penalty_and_the_columns_of_the_original_files():

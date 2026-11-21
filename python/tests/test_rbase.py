@@ -10,6 +10,7 @@
 # Usage:   python -m pytest python/tests/test_rbase.py     # inside `nix develop`
 # -----------------------------------------------------------------------------
 import math
+from fractions import Fraction
 
 import numpy as np
 import pytest
@@ -87,6 +88,74 @@ def test_sums_means_and_variances_are_those_of_r():
     assert rbase.r_mean([1, np.nan, 3], na_rm=True) == 2
     assert rbase.r_var([1, np.nan, 3], na_rm=True) == 2
     assert math.isnan(rbase.r_var([1])) and math.isnan(rbase.r_mean([]))
+
+
+def test_column_moments_are_the_mean_and_variance_without_missing_values():
+    nan = np.nan
+    A = np.array([[1.0, 1.0, nan, nan, 0.1],
+                  [2.0, nan, nan, nan, 0.1],
+                  [3.0, 3.0, 5.0, nan, 0.1],
+                  [6.0, nan, nan, nan, 0.1]])
+    centre, spread = rbase.column_moments(A)
+    assert centre[:3].tolist() == [3, 2, 5]
+    assert spread[:2].tolist() == [14 / 3, 2]
+    assert math.isnan(spread[2])                       # one value: no variance
+    assert math.isnan(centre[3]) and math.isnan(spread[3])   # no value
+    # the second pass of R's mean: a constant column has itself as mean
+    assert centre[4] == 0.1 and spread[4] == 0
+    # as mean() and var() of every column, and as numpy up to rounding
+    X = seeded_matrix(9, 3, seed=60)
+    X[1, 0] = X[4, 0] = X[8, 2] = nan
+    centre, spread = rbase.column_moments(X)
+    for j in range(3):
+        assert centre[j] == rbase.r_mean(X[:, j], na_rm=True)
+        assert spread[j] == rbase.r_var(X[:, j], na_rm=True)
+    close(centre, np.nanmean(X, axis=0))
+    close(spread, np.nanvar(X, axis=0, ddof=1))
+
+
+# A column whose sum a double loses and a longer type keeps: 2^53 + 1 is not
+# a double, so the two ones vanish when the sum is added in doubles.
+BIG = 2.0 ** 53
+LOST = [BIG, 1.0, 1.0, -BIG]
+
+
+def test_col_means_is_the_sum_of_every_column_over_the_number_of_rows():
+    A = np.array([[1.0, 4.0], [2.0, 5.0], [3.0, 7.0]])
+    assert rbase.col_means(A).tolist() == [2, 16 / 3]
+    assert rbase.col_means([[1, 2], [3, 5]]).tolist() == [2, 3.5]     # integers too
+    # sums without rounding: the mean is the exact fraction, rounded once
+    halves = np.array([[0.5, 1.0], [0.25, 2.0], [0.125, 4.0]])
+    exact = [float(sum(Fraction(v) for v in column) / 3) for column in halves.T]
+    assert rbase.col_means(halves).tolist() == exact
+    X = seeded_matrix(7, 3, seed=61)
+    close(rbase.col_means(X), X.mean(axis=0))
+    close(rbase.col_means(X), rbase.col_sums(X) / 7)
+    assert np.isnan(rbase.col_means(np.array([[1.0, 2.0], [np.nan, 4.0]]))).tolist() == \
+        [True, False]
+    # R adds in long double: where that is wider than a double the mean is
+    # the exact one, 2 / 4, else the ones are lost
+    assert math.fsum(LOST) / 4 == 0.5
+    assert rbase.col_means(np.array(LOST).reshape(-1, 1))[0] == (0.5 if rbase.WIDE else 0)
+
+
+def test_cum_sums_is_the_running_sum_rounded_at_every_element():
+    assert rbase.cum_sums([1, 2, 3, 4]).tolist() == [1, 3, 6, 10]
+    assert rbase.cum_sums([0.5, 0.25, -0.75]).tolist() == [0.5, 0.75, 0]
+    assert rbase.cum_sums([]).shape == (0,)
+    sums = rbase.cum_sums([1.0, np.nan, 2.0])
+    assert sums[0] == 1 and np.isnan(sums[1:]).all()   # a missing value stays
+    x = seeded_matrix(20, 1, seed=62)[:, 0]
+    sums = rbase.cum_sums(x)
+    assert sums.dtype == np.float64 and sums[0] == x[0]
+    close(sums, np.cumsum(x))
+    close(sums, [math.fsum(x[:i + 1]) for i in range(20)], atol=1e-14)
+    close(sums[-1], rbase.r_sum(x), atol=1e-14)
+    # the sum is carried in R's long double and only its copies are rounded:
+    # a wider type keeps the ones that doubles lose
+    carried = [BIG, BIG, BIG + 2, 2.0] if rbase.WIDE else [BIG, BIG, BIG, 0.0]
+    assert rbase.cum_sums(LOST).tolist() == carried
+    assert math.fsum(LOST) == 2
 
 
 def test_scale_centres_and_divides_by_the_sd():
