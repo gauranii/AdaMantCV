@@ -10,7 +10,9 @@
 #          mvrnorm().
 # Inputs:  The environment variable ADAMANT_BLAS names the library (OpenBLAS,
 #          set by flake.nix to the one R is linked to). Without it the
-#          products and decompositions come from numpy.
+#          products and decompositions come from numpy. The library may be
+#          built with 32-bit or with 64-bit integers; the calls pass the
+#          width it reports.
 # Outputs: None.
 # Usage:   from adamant.rbase import matprod, crossprod, svd, scale
 # Source:  R 4.6.1: src/main/array.c (matprod, crossprod),
@@ -29,9 +31,32 @@ os.environ.setdefault("OPENBLAS_NUM_THREADS", "1")  # as flake.nix sets it for R
 _LIBRARY = os.environ.get("ADAMANT_BLAS")
 _blas = ctypes.CDLL(_LIBRARY) if _LIBRARY else None
 
-_int = ctypes.c_int
+
+def _integer_type(library):
+    """The Fortran INTEGER of the library: 64 bits when OpenBLAS was built
+    with INTERFACE64 (its configuration then says USE64BITINT), else 32."""
+    if library is None or not hasattr(library, "openblas_get_config"):
+        return ctypes.c_int
+    library.openblas_get_config.restype = ctypes.c_char_p
+    library.openblas_get_config.argtypes = []
+    wide = b"USE64BITINT" in library.openblas_get_config()
+    return ctypes.c_int64 if wide else ctypes.c_int
+
+
+_int = _integer_type(_blas)
+_int_dtype = np.dtype(_int)
 _dbl = ctypes.c_double
 _ref = ctypes.byref
+
+# Every argument of the Fortran routines is passed by reference; the lengths
+# of the character arguments follow at the end, one size_t each, by value.
+_chr, _ptr, _len = ctypes.c_char_p, ctypes.c_void_p, ctypes.c_size_t
+if _blas is not None:
+    for _name, _characters, _others in [("dgemv_", 1, 10), ("dgemm_", 2, 11),
+                                        ("dgesdd_", 1, 13), ("dsyevr_", 3, 18)]:
+        _routine = getattr(_blas, _name)
+        _routine.argtypes = [_chr] * _characters + [_ptr] * _others + [_len] * _characters
+        _routine.restype = None
 SQRT_EPS = float(np.sqrt(np.finfo(float).eps))  # sqrt(.Machine$double.eps)
 
 
@@ -164,7 +189,7 @@ def svd(X):
     d = np.empty(k)
     u = np.empty((n, k), order="F")
     vt = np.empty((k, p), order="F")
-    iwork = np.empty(8 * k, dtype=np.intc)
+    iwork = np.empty(8 * k, dtype=_int_dtype)
     info = _int(0)
 
     def dgesdd(work, lwork):
@@ -195,7 +220,7 @@ def eigen_symmetric(S):
     a = S.copy(order="F")
     values = np.empty(n)
     z = np.empty((n, n), order="F")
-    isuppz = np.empty(2 * n, dtype=np.intc)
+    isuppz = np.empty(2 * n, dtype=_int_dtype)
     m, info = _int(0), _int(0)
 
     def dsyevr(work, lwork, iwork, liwork):
@@ -210,7 +235,7 @@ def eigen_symmetric(S):
     size, isize = _dbl(0.0), _int(0)
     dsyevr(_ref(size), -1, _ref(isize), -1)
     work = np.empty(int(size.value))
-    iwork = np.empty(isize.value, dtype=np.intc)
+    iwork = np.empty(isize.value, dtype=_int_dtype)
     dsyevr(_pointer(work), len(work), _pointer(iwork), len(iwork))
     return {"values": values[::-1].copy(), "vectors": np.asfortranarray(z[:, ::-1])}
 

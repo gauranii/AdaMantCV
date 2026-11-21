@@ -43,9 +43,13 @@
         );
 
       # The BLAS and LAPACK library R is linked to; python/adamant/rbase.py
-      # calls it for its matrix products and decompositions.
+      # calls it for its matrix products and decompositions. R is built on
+      # pkgs.blas, whose provider is OpenBLAS with 32-bit integers on every
+      # system; pkgs.openblas itself has 64-bit integers on x86_64, another
+      # library with another calling convention.
       blasLibrary =
-        pkgs: "${pkgs.openblas}/lib/libopenblas${pkgs.stdenv.hostPlatform.extensions.sharedLibrary}";
+        pkgs:
+        "${pkgs.blas.provider}/lib/libopenblas${pkgs.stdenv.hostPlatform.extensions.sharedLibrary}";
 
       # One command per table and figure of the paper.
       scripts = {
