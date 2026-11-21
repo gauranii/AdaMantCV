@@ -1,4 +1,4 @@
-# AdaMantCV: Adaptive Mantel test with cross-validation
+# AdaMantCV: Adaptive Mantel Test with Cross-Validation
 
 R and Python code for
 
