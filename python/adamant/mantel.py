@@ -125,7 +125,8 @@ def observed_pvalues(statistics):
 @njit(cache=True)
 def _column_moments(A, fused):
     """Mean and variance of every column, as R's mean() and var() with
-    na.rm = TRUE; `fused` adds each squared deviation with one rounding."""
+    na.rm = TRUE where R's long double is a double (rbase.column_moments
+    otherwise); `fused` adds each squared deviation with one rounding."""
     centre = np.empty(A.shape[1])
     spread = np.empty(A.shape[1])
     for j in range(A.shape[1]):
@@ -172,7 +173,10 @@ def gamma_pvalues(statistics, rows=None):
     `rows`.
     """
     rows = np.arange(statistics.shape[0]) if rows is None else np.asarray(rows)
-    center, spread = _column_moments(np.ascontiguousarray(statistics[1:, :]), FUSED)
+    if rbase.WIDE:
+        center, spread = rbase.column_moments(statistics[1:, :])
+    else:
+        center, spread = _column_moments(np.ascontiguousarray(statistics[1:, :]), FUSED)
     with np.errstate(divide="ignore", invalid="ignore"):
         return rbase.pgamma_upper(statistics[rows, :], (center * center / spread)[None, :],
                                   (center / spread)[None, :])

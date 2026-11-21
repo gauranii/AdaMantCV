@@ -37,7 +37,7 @@ def percent_rank_cumulative(x):
     """
     x = np.asarray(x, dtype=np.float64)
     distinct, position, counts = np.unique(x, return_inverse=True, return_counts=True)
-    return np.cumsum(np.concatenate(([0.0], counts / (len(x) - 1))))[position]
+    return rbase.cum_sums(np.concatenate(([0.0], counts / (len(x) - 1))))[position]
 
 
 def adaptive_pvalue(chosen_pvalues):

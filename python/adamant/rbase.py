@@ -13,6 +13,10 @@
 #          products and decompositions come from numpy. The library may be
 #          built with 32-bit or with 64-bit integers; the calls pass the
 #          width it reports.
+#          R adds its sums and means in the C type long double, which is a
+#          double on arm64 macOS, 80 bits wide on x86_64 and 128 bits wide on
+#          arm64 Linux; the sums here are added in numpy's longdouble, the
+#          same type, so they round as R's do on each of them.
 # Outputs: None.
 # Usage:   from adamant.rbase import matprod, crossprod, svd, scale
 # Source:  R 4.6.1: src/main/array.c (matprod, crossprod),
@@ -259,12 +263,67 @@ def ginv(X, tol=SQRT_EPS):
 
 # ----- Sums, means and scaling -----
 
-@njit(cache=True)
-def col_sums(A):
-    """`colSums(A)`: every column added from the first row down.
+_long = np.longdouble  # the type R adds in (LDOUBLE)
+WIDE = np.finfo(_long).nmant > np.finfo(np.float64).nmant  # wider than a double
 
-    Parameters: A (matrix). Returns: float array of length ncol(A).
+
+def _long_sums(A):
+    """Every column of A added from the first row down, in long double.
+
+    Parameters: A (matrix, float or long double). Returns: long double array.
     """
+    if A.shape[0] == 0:
+        return np.zeros(A.shape[1], dtype=_long)
+    return np.add.accumulate(np.asarray(A, dtype=_long), axis=0)[-1]
+
+
+def _long_mean(x):
+    """R's two-pass mean of a vector, before it is rounded to a double: the
+    sum over the count, plus the mean of the deviations from it.
+
+    Parameters: x (float vector, not empty). Returns: long double.
+    """
+    x = np.asarray(x, dtype=_long).reshape(-1, 1)
+    n = x.shape[0]
+    s = _long_sums(x)[0] / n
+    if np.isfinite(np.float64(s)):
+        s = s + _long_sums(x - s)[0] / n
+    return s
+
+
+def _long_var(x):
+    """R's variance of a vector with more than one value: the deviations
+    from the mean (a double) and their squares in long double.
+
+    Parameters: x (float vector). Returns: float.
+    """
+    centre = np.float64(_long_mean(x))
+    deviations = np.asarray(x, dtype=_long).reshape(-1, 1) - _long(centre)
+    return float(_long_sums(deviations * deviations)[0] / (len(x) - 1))
+
+
+def column_moments(A):
+    """Mean and variance of every column as R's mean() and var() with
+    na.rm = TRUE, added in long double.
+
+    Parameters: A (matrix; NaN is skipped).
+    Returns: means, variances (float arrays; the mean is NaN for a column
+    without values, the variance for a column with fewer than two).
+    """
+    centre = np.full(A.shape[1], np.nan)
+    spread = np.full(A.shape[1], np.nan)
+    for j in range(A.shape[1]):
+        x = A[:, j]
+        x = x[~np.isnan(x)]
+        if len(x) > 0:
+            centre[j] = np.float64(_long_mean(x))
+        if len(x) > 1:
+            spread[j] = _long_var(x)
+    return centre, spread
+
+
+@njit(cache=True)
+def _col_sums(A):
     out = np.empty(A.shape[1])
     for j in range(A.shape[1]):
         total = 0.0
@@ -272,6 +331,34 @@ def col_sums(A):
             total += A[i, j]
         out[j] = total
     return out
+
+
+def col_sums(A):
+    """`colSums(A)`: every column added from the first row down.
+
+    Parameters: A (matrix). Returns: float array of length ncol(A).
+    """
+    A = np.asarray(A, dtype=np.float64)
+    return _long_sums(A).astype(np.float64) if WIDE else _col_sums(A)
+
+
+def col_means(A):
+    """`colMeans(A)`: the sum of every column over the number of rows.
+
+    Parameters: A (matrix). Returns: float array of length ncol(A).
+    """
+    A = np.asarray(A, dtype=np.float64)
+    if WIDE:
+        return (_long_sums(A) / A.shape[0]).astype(np.float64)
+    return _col_sums(A) / A.shape[0]
+
+
+def cum_sums(x):
+    """`cumsum(x)`: the running sum, rounded to a double at every element.
+
+    Parameters: x (vector). Returns: float array.
+    """
+    return np.add.accumulate(np.asarray(x, dtype=_long)).astype(np.float64)
 
 
 def r_sum(x):
@@ -302,7 +389,9 @@ def r_mean(x, na_rm=False):
     x = np.asarray(x, dtype=np.float64)
     if na_rm:
         x = x[~np.isnan(x)]
-    return float(_mean(x)) if len(x) else float("nan")
+    if len(x) == 0:
+        return float("nan")
+    return float(_long_mean(x)) if WIDE else float(_mean(x))
 
 
 @njit(cache=True)
@@ -321,7 +410,9 @@ def r_var(x, na_rm=False):
     x = np.asarray(x, dtype=np.float64)
     if na_rm:
         x = x[~np.isnan(x)]
-    return float(_var(x, rng.FUSED)) if len(x) > 1 else float("nan")
+    if len(x) <= 1:
+        return float("nan")
+    return _long_var(x) if WIDE else float(_var(x, rng.FUSED))
 
 
 def r_sd(x, na_rm=False):
@@ -336,7 +427,7 @@ def scale(x):
     """
     x = as_matrix(x)
     n = x.shape[0]
-    x = x - (col_sums(x) / n)[None, :]
+    x = x - col_means(x)[None, :]
     spread = np.sqrt(col_sums(x * x) / max(1, n - 1))
     return np.asfortranarray(x / spread[None, :])
 

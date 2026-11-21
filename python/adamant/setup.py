@@ -18,6 +18,7 @@ import re
 import sys
 import time
 
+import numpy as np
 import pandas as pd
 
 REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
@@ -155,6 +156,43 @@ def read_csv(file, **options):
     return pd.read_csv(file, float_precision="round_trip", **options)
 
 
+# R scales a number in the C type long double. Where that is wider than a
+# double (80 bits on x86_64, 128 on arm64 Linux; on arm64 macOS it is a
+# double) the powers of ten up to 1e27 are exact and the scaled number keeps
+# more digits, so R can count one more significant digit there.
+_long = np.longdouble
+_WIDE = np.finfo(_long).nmant > np.finfo(np.float64).nmant
+_EXACT_POWER = 27 if _WIDE else 22  # largest power of ten that is exact
+_TEN = [_long(f"1e{k}") for k in range(_EXACT_POWER + 1)] if _WIDE else \
+    [10.0 ** k for k in range(_EXACT_POWER + 1)]
+
+
+def _scaled_integer(r, kp, digits):
+    """r / 10^kp rounded to the nearest integer (ties to even), and kp, one
+    lower when the quotient has fewer than `digits` digits: the step of R's
+    scientific() that depends on the width of long double."""
+    if _WIDE:
+        scaled = _long(r)
+        if abs(kp) <= _EXACT_POWER:
+            scaled = scaled / _TEN[kp] if kp > 0 else scaled * _TEN[-kp] if kp < 0 else scaled
+        else:
+            scaled = scaled / np.power(_long(10.0), _long(kp))
+        if scaled < _TEN[digits - 1]:
+            scaled = scaled * _long(10.0)
+            kp -= 1
+        return float(np.rint(scaled)), kp
+    if abs(kp) <= _EXACT_POWER:
+        scaled = r / 10.0 ** kp if kp >= 0 else r * 10.0 ** -kp
+    elif kp <= -308:
+        scaled = (r * 1e+303) / math.pow(10.0, kp + 303)
+    else:
+        scaled = r / math.pow(10.0, kp)
+    if scaled < 10.0 ** (digits - 1):
+        scaled *= 10.0
+        kp -= 1
+    return float(round(scaled)), kp
+
+
 def format_number(x, digits=15):
     """A number as R writes it with `digits` significant digits.
 
@@ -173,16 +211,7 @@ def format_number(x, digits=15):
         return "0"
     negative, r = int(x < 0), abs(x)
     kp = math.floor(math.log10(r)) - digits + 1
-    if abs(kp) <= 22:  # powers of ten that are exact
-        scaled = r / 10.0 ** kp if kp >= 0 else r * 10.0 ** -kp
-    elif kp <= -308:
-        scaled = (r * 1e+303) / math.pow(10.0, kp + 303)
-    else:
-        scaled = r / math.pow(10.0, kp)
-    if scaled < 10.0 ** (digits - 1):
-        scaled *= 10.0
-        kp -= 1
-    alpha = float(round(scaled))  # to the nearest integer, ties to even
+    alpha, kp = _scaled_integer(r, kp, digits)
     significant = digits
     for _ in range(digits):
         alpha /= 10.0
@@ -194,8 +223,8 @@ def format_number(x, digits=15):
         kp += 1
     power = kp + digits - 1
     left = power + 1
-    cut = min(max(digits - power, 0), 22)  # the decimal place rounding cuts off
-    if 0 < power <= 22 and r < 10.0 ** power - 0.5 / 10.0 ** cut:
+    cut = min(max(digits - power, 0), _EXACT_POWER)  # the decimal place rounding cuts off
+    if 0 < power <= _EXACT_POWER and r < _TEN[power] - 0.5 / float(_TEN[cut]):
         left -= 1
     decimals = max(0, significant - power - 1)
     fixed_width = negative + max(left, 1) + decimals + (decimals > 0)

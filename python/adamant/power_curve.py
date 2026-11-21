@@ -61,7 +61,8 @@ def power_run(run, U, weights, lambdas, y, sigma, n_perms, seed, exact):
 @njit(cache=True)
 def _minus_log10_moments(p, shift, fused):
     """Mean and sd over the rows of -log10(p + shift), per column, without
-    missing values; `fused` adds each squared deviation with one rounding."""
+    missing values, where R's long double is a double; `fused` adds each
+    squared deviation with one rounding."""
     centre = np.empty(p.shape[1])
     spread = np.empty(p.shape[1])
     values = np.empty(p.shape[0])
@@ -94,6 +95,30 @@ def _minus_log10_moments(p, shift, fused):
         centre[j] = s
         spread[j] = math.sqrt(total / (n - 1)) if n > 1 else np.nan
     return centre, spread
+
+
+@njit(cache=True)
+def _minus_log10(p, shift):
+    """-log10(p + shift) of every entry; NaN stays NaN."""
+    out = np.empty(p.shape)
+    for j in range(p.shape[1]):
+        for i in range(p.shape[0]):
+            out[i, j] = np.nan if np.isnan(p[i, j]) else -math.log10(p[i, j] + shift)
+    return out
+
+
+def minus_log10_moments(p, shift):
+    """Mean and sd over the rows of -log10(p + shift), per column, without
+    missing values, as R's mean() and sd() compute them.
+
+    Parameters: p (matrix of p-values), shift (added before the logarithm).
+    Returns: means, sds (float arrays).
+    """
+    p = np.ascontiguousarray(p, dtype=np.float64)
+    if not rbase.WIDE:
+        return _minus_log10_moments(p, shift, FUSED)
+    centre, spread = rbase.column_moments(_minus_log10(p, shift))
+    return centre, np.sqrt(spread)
 
 
 def power_curve(X, y, n_negative, n_positive, sigma, n_perms, n_runs, alpha, seed,
@@ -133,8 +158,8 @@ def power_curve(X, y, n_negative, n_positive, sigma, n_perms, n_runs, alpha, see
         def power(p):
             return (p <= alpha).sum(axis=0) / n_runs
 
-        ave, sd = _minus_log10_moments(pvals, rbase.SQRT_EPS, FUSED)
-        ave_mom, sd_mom = _minus_log10_moments(pvals_mom, rbase.SQRT_EPS, FUSED)
+        ave, sd = minus_log10_moments(pvals, rbase.SQRT_EPS)
+        ave_mom, sd_mom = minus_log10_moments(pvals_mom, rbase.SQRT_EPS)
         return pd.DataFrame({
             "lambdas": lambdas,
             "ave_logpval": ave,
