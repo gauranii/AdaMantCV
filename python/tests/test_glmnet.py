@@ -9,9 +9,11 @@
 #          passes of the full fit and of every fold fit.
 # Inputs:  data/liver/mixOmicsData.csv.
 # Outputs: None (prints the differences; exits non-zero when a check fails).
-# Usage:   nix develop -c python python/tests/test_glmnet.py          (everything)
-#          nix develop -c python python/tests/test_glmnet.py quick    (no full liver grids)
-#          nix develop -c pytest python/tests/test_glmnet.py
+#          Also checks the ridge path against its closed form, without
+#          running R.
+# Usage:   nix develop -c python -m pytest python/tests/test_glmnet.py          (no full liver grids)
+#          nix develop -c python -m pytest python/tests/test_glmnet.py --full   (everything)
+#          nix develop -c python python/tests/test_glmnet.py [quick]            (everything, or as the first)
 # Source:  glmnet 5.0 (cv.glmnet, elnet; gaussian family, alpha = 0).
 # -----------------------------------------------------------------------------
 
@@ -22,6 +24,7 @@ import time
 from pathlib import Path
 
 import numpy as np
+import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "python"))
@@ -164,6 +167,7 @@ def read_liver():
     return scaled[:, 10:], scaled[:, :10]
 
 
+@pytest.mark.against_r
 def test_random_covariance():
     X, Y = random_problem(40, 12, 2, seed=1)
     compare("random, covariance, n > p", X, Y, 10.0 ** np.linspace(2, -3, 60), make_folds(40, 5, 2, 11))
@@ -171,11 +175,13 @@ def test_random_covariance():
     compare("random, covariance, n < p", X, Y, 10.0 ** np.linspace(3, -2, 80), make_folds(25, 5, 2, 12))
 
 
+@pytest.mark.against_r
 def test_random_naive():
     X, Y = random_problem(30, 600, 2, seed=3)
     compare("random, naive, p = 600", X, Y, 10.0 ** np.linspace(4, -2, 40), make_folds(30, 6, 2, 13))
 
 
+@pytest.mark.against_r
 def test_random_special():
     X, Y = random_problem(21, 9, 1, seed=4)
     X[:, 3] = 2.0  # a constant column, which glmnet leaves out
@@ -183,6 +189,7 @@ def test_random_special():
             X, Y, np.array([0.5, 30.0, 0.01, 2.0, 7.0, 0.1]), make_folds(21, 10, 1, 14))
 
 
+@pytest.mark.against_r
 def test_liver_subset_thinned():
     X, Y = read_liver()
     genes = np.arange(0, 3100, 62)  # 50 fixed gene columns
@@ -191,6 +198,8 @@ def test_liver_subset_thinned():
             make_folds(X.shape[0], 10, 3, 21))
 
 
+@pytest.mark.against_r
+@pytest.mark.full
 def test_liver_subset_full_grid():
     X, Y = read_liver()
     genes = np.arange(0, 3100, 62)
@@ -200,6 +209,8 @@ def test_liver_subset_full_grid():
             make_folds(X.shape[0], 10, 10, 22), fold_passes=False)
 
 
+@pytest.mark.against_r
+@pytest.mark.full
 def test_liver_all_genes():
     X, Y = read_liver()
     lambdas = 10.0 ** np.arange(9, -5 - 1e-9, -0.1)
@@ -208,11 +219,46 @@ def test_liver_all_genes():
             make_folds(X.shape[0], 10, 10, 23), fold_passes=False)
 
 
+def test_glmnet_ridge_is_the_closed_form_of_ridge_regression():
+    # glmnet minimizes sum((y - a - X b)^2) / (2 n) + lambda * |b|^2 / 2 on
+    # predictors and response scaled to variance one (divisor n): on centred
+    # data b = (Z'Z + n lambda sd(y) I)^-1 Z'y per sd of each predictor
+    X, Y = random_problem(40, 5, 1, seed=5)
+    y = Y[:, 0]
+    lambdas = np.array([0.01, 5.0, 0.5])              # used in decreasing order
+    a0, beta = glmnet.glmnet_ridge(X, y, lambdas)
+    assert a0.shape == (3,) and beta.shape == (5, 3)
+    centre, spread = X.mean(axis=0), X.std(axis=0)
+    Z = (X - centre) / spread
+    for column, lam in enumerate([5.0, 0.5, 0.01]):
+        b = np.linalg.solve(Z.T @ Z + 40 * lam / y.std() * np.eye(5), Z.T @ (y - y.mean()))
+        # coordinate descent stops at thresh = 1e-7, short of the exact solution
+        np.testing.assert_allclose(beta[:, column], b / spread, rtol=5e-3, atol=5e-4)
+        np.testing.assert_allclose(a0[column], y.mean() - centre @ (b / spread), rtol=5e-3)
+
+
+def test_cv_glmnet_ridge_returns_the_curve_and_its_minimum():
+    X, Y = random_problem(40, 5, 1, seed=5)
+    lambdas = np.array([0.01, 5.0, 0.5])
+    folds = make_folds(40, 5, 1, 15)[:, 0]
+    cv = glmnet.cv_glmnet_ridge(X, Y[:, 0], lambdas, folds)
+    assert cv["lambda"].tolist() == [5.0, 0.5, 0.01]
+    assert cv["cvm"].shape == (3,) and (cv["cvm"] > 0).all()
+    assert cv["cvm"][0] > cv["cvm"][2]                # the largest penalty fits worst
+    assert cv["lambda_min"] == cv["lambda"][np.argmin(cv["cvm"])]
+    assert cv["index_min"] == int(np.argmin(cv["cvm"]))
+    assert len(cv["fold_npasses"]) == 5
+    # with two folds the curve is the mean squared error of each half
+    # predicted from the fit on the other, weighted by the sizes of the halves
+    halves = np.where(np.arange(40) < 15, 1, 2)
+    two = glmnet.cv_glmnet_ridge(X, Y[:, 0], lambdas, halves)
+    squared = np.empty((40, 3))
+    for fold in (1, 2):
+        a0, beta = glmnet.glmnet_ridge(X[halves != fold], Y[halves != fold, 0], lambdas)
+        squared[halves == fold] = (Y[halves == fold, 0][:, None]
+                                   - (a0 + X[halves == fold] @ beta)) ** 2
+    np.testing.assert_allclose(two["cvm"], squared.mean(axis=0), rtol=1e-10)
+
+
 if __name__ == "__main__":
-    tests = [test_random_covariance, test_random_naive, test_random_special,
-             test_liver_subset_thinned]
-    if "quick" not in sys.argv[1:]:
-        tests += [test_liver_subset_full_grid, test_liver_all_genes]
-    for test in tests:
-        test()
-    print("all comparisons passed")
+    sys.exit(pytest.main([__file__, "-q", "-s"] + ([] if "quick" in sys.argv[1:] else ["--full"])))

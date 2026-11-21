@@ -7,9 +7,11 @@
 #          folds of cv.glmnet(), the gene sample of Figure 1, the noise and
 #          the coefficients of the simulations, and a simulated design
 #          (MASS::mvrnorm and scale).
+#          Also checks the first draws of a seed against the numbers R
+#          prints, without running R.
 # Inputs:  None (R is run through Rscript; numbers are passed in binary).
-# Outputs: prints one line per check; exit status 1 if a number differs.
-# Usage:   python python/tests/test_rng.py     # inside `nix develop`
+# Outputs: None (pytest reports the sequences that differ).
+# Usage:   python -m pytest python/tests/test_rng.py     # inside `nix develop`
 # -----------------------------------------------------------------------------
 import os
 import subprocess
@@ -17,6 +19,7 @@ import sys
 import tempfile
 
 import numpy as np
+import pytest
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 
@@ -91,24 +94,82 @@ def python_draws():
     return draws
 
 
-def main():
+@pytest.fixture(scope="module")
+def r_draws():
+    """The numbers R draws with R_CODE, in order."""
     with tempfile.TemporaryDirectory() as folder:
         file = os.path.join(folder, "draws.bin")
         subprocess.run(["Rscript", "-e", R_CODE % ", ".join(map(str, SEEDS)), file], check=True)
-        reference = np.fromfile(file)
+        return np.fromfile(file)
+
+
+@pytest.mark.against_r
+def test_every_sequence_is_identical_to_r(r_draws):
     draws = python_draws()
-    assert sum(len(values) for _, values in draws) == len(reference), "different number of draws"
-    position = failures = 0
+    assert sum(len(values) for _, values in draws) == len(r_draws), "different number of draws"
+    position, different = 0, []
     for label, values in draws:
-        expected = reference[position:position + len(values)]
+        expected = r_draws[position:position + len(values)]
         position += len(values)
         if not np.array_equal(values, expected):
-            failures += 1
-            print(f"DIFFERENT  {label}: {int((values != expected).sum())} of {len(values)}")
-    print(f"rng: {len(draws) - failures} of {len(draws)} sequences identical to R "
-          f"({len(reference)} numbers, {len(SEEDS)} seeds)")
-    return 0 if failures == 0 else 1
+            different.append(f"{label}: {int((values != expected).sum())} of {len(values)}")
+    print(f"rng: {len(draws) - len(different)} of {len(draws)} sequences identical to R "
+          f"({len(r_draws)} numbers, {len(SEEDS)} seeds)")
+    assert not different, different
+
+
+def test_the_first_draws_of_seed_1_are_those_r_prints():
+    # set.seed(1); runif(2) / rnorm(2) / sample.int(5); sample.int(10, 3) in R 4.6.1
+    rng.set_seed(1)
+    assert rng.runif(2).tolist() == [0.26550866314209998, 0.37212389963679016]
+    rng.set_seed(1)
+    assert rng.rnorm(2).tolist() == [-0.62645381074233242, 0.18364332422208227]
+    rng.set_seed(1)
+    assert rng.sample_int(5).tolist() == [1, 4, 3, 5, 2]
+    assert rng.sample_int(10, 3).tolist() == [7, 2, 3]
+    rng.set_seed(42)
+    assert rng.sample(np.array([10, 20, 30, 40])).tolist() == [10, 40, 30, 20]
+
+
+def test_set_seed_restarts_the_stream():
+    rng.set_seed(8891)
+    first = (rng.runif(3), rng.rnorm(4, 1, 0.5), rng.sample_int(6))
+    rng.set_seed(8891)
+    again = (rng.runif(3), rng.rnorm(4, 1, 0.5), rng.sample_int(6))
+    assert all(np.array_equal(a, b) for a, b in zip(first, again))
+    assert not np.array_equal(rng.runif(3), first[0])
+
+
+def test_the_draws_have_the_range_and_the_moments_they_should():
+    rng.set_seed(2)
+    uniform = rng.runif(20000)
+    assert ((uniform > 0) & (uniform < 1)).all() and abs(uniform.mean() - 0.5) < 0.01
+    normal = rng.rnorm(20000, 3, 2)
+    assert abs(normal.mean() - 3) < 0.05 and abs(normal.std() - 2) < 0.05
+    assert sorted(rng.sample_int(50)) == list(range(1, 51))
+    part = rng.sample_int(50, 7)
+    assert len(set(part)) == 7 and part.min() >= 1 and part.max() <= 50
+
+
+def test_permutation_rows_is_consecutive_calls_of_sample_int():
+    rng.set_seed(3)
+    rows = rng.permutation_rows(6, 4)
+    assert rows.shape == (4, 6)
+    rng.set_seed(3)
+    for row in rows:
+        assert np.array_equal(row, rng.sample_int(6) - 1)
+
+
+def test_muladd_is_a_times_b_plus_c():
+    from numba import njit
+
+    @njit
+    def combine(a, b, c):
+        return rng.muladd(a, b, c)
+
+    assert combine(2.0, 3.0, 1.0) == 7.0
+    assert isinstance(rng.FUSED, bool)
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(pytest.main([__file__, "-q", "-s"]))

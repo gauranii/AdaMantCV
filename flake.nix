@@ -23,6 +23,7 @@
             ggplot2
             MASS
             glmnet
+            testthat
           ];
         };
 
@@ -37,6 +38,7 @@
             pandas
             matplotlib
             numba
+            pytest
           ]
         );
 
@@ -99,6 +101,58 @@
         program = "${pyRunner pkgs name names}";
         meta.description = "Build ${name} of the paper with the Python scripts";
       };
+
+      # The unit tests: testthat over tests/testthat/ and pytest over
+      # python/tests/, started in the directory `root`. The Python tests that
+      # compare with R (marker against_r) are chosen with `marker`.
+      unitTests = pkgs: ''
+        export OPENBLAS_NUM_THREADS=1 VECLIB_MAXIMUM_THREADS=1
+        export ADAMANT_BLAS=${blasLibrary pkgs}
+        export PYTHONDONTWRITEBYTECODE=1
+        export PATH=${rEnv pkgs}/bin:${pyEnv pkgs}/bin:$PATH
+        unit_r() { Rscript tests/testthat.R; }
+        unit_python() { python -m pytest -p no:cacheprovider python/tests "$@"; }
+      '';
+
+      # The text `nix run .#help` prints: every command of the flake.
+      helpText =
+        let
+          row =
+            command: text:
+            "  nix run .#${command}${lib.fixedWidthString (12 - builtins.stringLength command) " " ""}${text}";
+          rows = lib.mapAttrsToList (name: script: row name "scripts/${script}.R") scripts;
+          pyRows = lib.mapAttrsToList (name: script: row "py-${name}" "python/scripts/${script}.py") scripts;
+        in
+        lib.concatStringsSep "\n" (
+          [
+            "AdaMantCV: code of Gauran, Xue, Chen, Ombao, Yu (2022), Front. Neurosci. 16:836100"
+            ""
+            "One command per table and figure of the paper (R):"
+          ]
+          ++ rows
+          ++ [
+            (row "all" "every table and figure")
+            ""
+            "The same outputs with the Python scripts:"
+          ]
+          ++ pyRows
+          ++ [
+            (row "py-all" "every table and figure")
+            ""
+            "Other commands:"
+            (row "test" "unit tests of R/ and python/adamant/ in the current directory")
+            (row "versions" "print the software versions")
+            (row "help" "print this list")
+            "  nix flake check       build every output, compare it with the paper and R with Python, run the unit tests"
+            "  nix develop           a shell with the same R and Python"
+            ""
+            "Results are written to results/ and figures/ of the current directory (or of ADAMANT_OUTPUT)."
+            "Every table and figure command takes --rerun (recompute from the data instead of reading the"
+            "archived runs) and the options listed in the header of its script, after --, for example"
+            "  nix run .#table4 -- --rerun --cores=5"
+            "The test command passes its arguments to pytest, for example: nix run .#test -- --full"
+          ]
+        );
     in
     {
       devShells = forEachSystem (pkgs: {
@@ -130,6 +184,23 @@
             ''}";
             meta.description = "Print the software versions";
           };
+          test = {
+            type = "app";
+            program = "${pkgs.writeShellScript "adamantcv-test" ''
+              set -euo pipefail
+              ${unitTests pkgs}
+              unit_r
+              unit_python "$@"
+            ''}";
+            meta.description = "Run the unit tests of the R and the Python code in the current directory";
+          };
+          help = {
+            type = "app";
+            program = "${pkgs.writeShellScript "adamantcv-help" ''
+              printf '%b\n' "${helpText}"
+            ''}";
+            meta.description = "List every command";
+          };
         }
       );
 
@@ -151,6 +222,26 @@
               cp $TMPDIR/RESULTS.md $out
             '';
 
+        # The unit tests of every function in R/ (testthat, tests/testthat/).
+        unit-r = pkgs.runCommand "adamantcv-unit-r" { } ''
+          export HOME=$TMPDIR
+          ${unitTests pkgs}
+          cd ${self}
+          unit_r | tee $TMPDIR/unit-r.txt
+          cp $TMPDIR/unit-r.txt $out
+        '';
+
+        # The unit tests of every function in python/adamant/ (pytest,
+        # python/tests/), without the comparisons with R that checks.python
+        # runs.
+        unit-python = pkgs.runCommand "adamantcv-unit-python" { } ''
+          export HOME=$TMPDIR
+          ${unitTests pkgs}
+          cd ${self}
+          unit_python -m "not against_r" | tee $TMPDIR/unit-python.txt
+          cp $TMPDIR/unit-python.txt $out
+        '';
+
         # Build every table and figure with the R and with the Python
         # scripts and compare the two, and compare the random numbers,
         # pgamma and the cross-validated ridge regression of the Python
@@ -171,9 +262,7 @@
               cd ${self}
               bash checks/check_python.sh archive $TMPDIR/work $TMPDIR/PYTHON.md $TMPDIR \
                 || { cat $TMPDIR/PYTHON.md; exit 1; }
-              python python/tests/test_rng.py
-              python python/tests/test_rmath.py
-              python python/tests/test_glmnet.py quick
+              python -m pytest -p no:cacheprovider -m against_r python/tests
               bash checks/versions.sh --check
               cp $TMPDIR/PYTHON.md $out
             '';

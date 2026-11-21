@@ -64,3 +64,7 @@ rsconnect/
 
 # Python byte code and compiled-function caches
 __pycache__/
+.pytest_cache/
+
+# Folder testthat creates for snapshots (none are used)
+/tests/testthat/_snaps/

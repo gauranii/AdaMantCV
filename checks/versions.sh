@@ -23,7 +23,7 @@ locked = json.load(open("flake.lock"))["nodes"]["nixpkgs"]["locked"]
 print(f"nixpkgs  {locked['owner']}/{locked['repo']} {locked['rev']}")
 print()
 print(f"Python   {platform.python_version()}")
-for name in ["numpy", "scipy", "pandas", "matplotlib", "numba"]:  # pyEnv of flake.nix
+for name in ["numpy", "scipy", "pandas", "matplotlib", "numba", "pytest"]:  # pyEnv of flake.nix
     print(f"  {name:12} {version(name)}")
 PY
   echo

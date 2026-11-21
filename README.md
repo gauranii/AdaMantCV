@@ -32,13 +32,15 @@ implementations give the same outputs, checked by `nix flake check`.
 | `scripts/` | One script per table or figure |
 | `python/adamant/` | The same modules in Python (`mantel.py`, `ridge_cv.py`, `adamant_cv.py`, ...), with `rng.py` (the random numbers of R), `rbase.py` and `rmath.py` (R's arithmetic, matrix products and decompositions, `pgamma`) and `glmnet.py` (cross-validated ridge regression as glmnet computes it) |
 | `python/scripts/` | One Python script per table or figure, with the names and options of `scripts/` |
-| `python/tests/` | Comparisons of `rng.py`, `rmath.py` and `glmnet.py` with R |
+| `tests/` | Unit tests of every function in `R/` (testthat): `testthat/test-<module>.R`, run by `testthat.R` |
+| `python/tests/` | Unit tests of every function in `python/adamant/` (pytest): `test_<module>.py`, with the comparisons of `rng.py`, `rmath.py` and `glmnet.py` with R |
 | `archive/` | Outputs of the original runs that the scripts read, the published figure files (`figures/`, named as the figures the scripts draw), and `reduce_archive.R`, which made the former from the run folders |
 | `data/liver/` | The liver toxicity data |
 | `coherence/` | The scripts that computed the EEG coherence and built the per-triple files, with how each step connects to the data folders (not run by the flake) |
 | `reference/` | The 250 EEG triples (`triple.csv`), the channel names, and `table4_cluster_lambda0.csv` |
 | `checks/` | The numbers printed in the paper (`paper_values.csv`), the comparison scripts and their result (`RESULTS.md`), and `check_equivalence.R`, which compares the outputs of two versions of the code; `check_python.sh`, which compares the outputs of the R and the Python scripts, and its result (`PYTHON.md`); `versions.sh`, which prints the software versions |
-| `flake.nix`, `flake.lock` | Pinned environment (R with ggplot2, MASS and glmnet; Python with numpy, scipy, pandas, matplotlib and numba), one command per output, and the checks |
+| `flake.nix`, `flake.lock` | Pinned environment (R with ggplot2, MASS, glmnet and testthat; Python with numpy, scipy, pandas, matplotlib, numba and pytest), one command per output, and the checks |
+| `.github/workflows/ci.yml` | Continuous integration: `nix flake check` on every push and pull request |
 
 ## Running
 
@@ -48,8 +50,10 @@ With [Nix](https://nixos.org) (flakes enabled), from the repository root:
 nix run .#table4        # one output: table1 to table4, fig1 to fig3, fig5 to fig8
 nix run .#all           # every output
 nix run .#py-table4     # the same output with the Python scripts (py-table1, ..., py-fig8, py-all)
-nix flake check         # build every output, compare it with the paper, compare R with Python
+nix flake check         # build every output, compare it with the paper, compare R with Python, run the unit tests
+nix run .#test          # the unit tests of the R and the Python code
 nix run .#versions      # print the software versions
+nix run .#help          # list every command
 ```
 
 Tables are written to `results/` (csv) and figures to `figures/` (pdf), each
@@ -73,6 +77,48 @@ be run directly: `Rscript scripts/table4_eeg_pvalues.R [--rerun]` or
 `python python/scripts/table4_eeg_pvalues.py [--rerun]`. Each script lists
 its options in its header. The settings are those of the paper: seed 8891, 1000
 permutations, significance level 0.05.
+
+## Tests
+
+Every function in `R/` and in `python/adamant/` has unit tests on small
+synthetic inputs with a known answer. The two suites use the same cases and
+expect the same answers, so they also check the two implementations against
+each other.
+
+| Suite | Files | Covers |
+|---|---|---|
+| R, testthat | `tests/testthat/test-<module>.R`, one per file of `R/` | The ridge statistic against its closed form y'X(X'X + lambda I)^-1 X'y; permutation p-values worked by hand; the gamma p-value against a Poisson sum; GCV against its formula and LOOCV against leave-one-out refits; cross-validated ridge regression against glmnet with the same folds and against a closed-form fit; covariance builders, scenario numbers and seeds of the simulations; rejection rates of a hand-made table; the readers on small made-up files and on the liver data; the tables built from the archived runs; small reruns end to end; the marks of every plot |
+| Python, pytest | `python/tests/test_<module>.py`, one per file of `python/adamant/` | The same cases, and the parts R itself supplies there: matrix products, decompositions, sums, `scale`, `quantile` and `seq` (`rbase.py`), numbers written as R writes them (`setup.py`), the colours and histogram bins of ggplot2 (`plots.py`) |
+| Python against R | `test_rng.py`, `test_rmath.py`, `test_glmnet.py` (marker `against_r`) | Run R and compare bit for bit: the random numbers for 7 seeds and the call sequences of the code, `pgamma` over every branch of its algorithm (about 375,000 cases), cross-validated ridge regression on random problems and on the liver data |
+
+```sh
+nix run .#test                                   # both suites, in the working tree
+nix run .#test -- --full                         # also the full penalty grids of Figure 1 against glmnet
+nix develop -c Rscript tests/testthat.R          # the R suite
+nix develop -c python -m pytest python/tests     # the Python suite
+nix develop -c python -m pytest python/tests/test_mantel.py -k closed_form    # some tests
+```
+
+The R suite takes about 5 seconds and the Python suite about 10. The tests
+read `reference/`, `archive/` and `data/liver/`, use made-up files in place of
+the EEG data, and write only to temporary folders. `nix flake check` runs the
+R suite as `checks.unit-r`, the Python suite as `checks.unit-python` and the
+comparisons with R within `checks.python`, in the sandbox, without network
+access.
+
+The seeds are part of what the tests check: every function that draws random
+numbers sets its seed where it draws (`adamant_cv()`, `simulate_design()`,
+`simulation_run()`, `power_run()`, `gcv_curve()`), so a result does not depend
+on the state of the random stream before the call or on the number of
+parallel processes. The one exception is `cv_curves()`, which draws its folds
+from the stream it is given, as `glmnet::cv.glmnet()` does; its script
+(`scripts/fig1_liver_cv.R`) sets the seeds.
+
+### Continuous integration
+
+`.github/workflows/ci.yml` runs `nix flake check` on every push and pull
+request (Ubuntu, Nix installed by `cachix/install-nix-action`). The repository
+is not on GitHub yet, so the workflow runs from the first push.
 
 ## Outputs
 
@@ -179,45 +225,64 @@ Python   3.14.7
   pandas       3.0.4
   matplotlib   3.11.1
   numba        0.67.0
+  pytest       9.1.1
 
 R        4.6.1
   boot         1.3-32
+  brio         1.1.5
+  callr        3.8.0
   class        7.3-23
   cli          3.6.6
   cluster      2.1.8.2
   codetools    0.2-20
   cpp11        0.5.5
+  crayon       1.5.3
+  desc         1.4.3
+  diffobj      0.3.6
+  evaluate     1.0.5
   farver       2.1.2
   foreach      1.5.2
   foreign      0.8-91
+  fs           2.1.0
   ggplot2      4.0.3
   glmnet       5.0
   glue         1.8.1
   gtable       0.3.6
   isoband      0.3.0
   iterators    1.0.14
+  jsonlite     2.0.0
   KernSmooth   2.23-26
   labeling     0.4.3
   lattice      0.22-9
   lifecycle    1.0.5
+  magrittr     2.0.5
   MASS         7.3-65
   Matrix       1.7-5
   mgcv         1.9-4
   nlme         3.1-169
   nnet         7.3-20
+  otel         0.2.0
+  pkgbuild     1.4.8
+  pkgload      1.5.3
+  praise       1.0.0
+  processx     3.9.0
+  ps           1.9.3
   R6           2.6.1
   RColorBrewer 1.1-3
   Rcpp         1.1.2
   RcppEigen    0.3.4.0.2
   rlang        1.3.0
   rpart        4.1.27
+  rprojroot    2.1.1
   S7           0.2.2
   scales       1.4.0
   shape        1.4.6.1
   spatial      7.3-18
   survival     3.8-6
+  testthat     3.3.2
   vctrs        0.7.3
   viridisLite  0.4.3
+  waldo        0.6.2
   withr        3.0.3
 
 OpenBLAS 0.3.33

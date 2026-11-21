@@ -12,7 +12,17 @@
 # Source:  R_initial.R, RPC_init.R (settings of the original runs).
 # -----------------------------------------------------------------------------
 
-REPO_ROOT <- normalizePath(file.path(dirname(sys.frame(1)$ofile), ".."))
+#' Path of the file that `source()` is reading.
+#'
+#' @return The path given to the innermost running `source()` call.
+sourced_file <- function() {
+  for (frame in rev(sys.frames())) {
+    if (!is.null(frame$ofile)) return(frame$ofile)
+  }
+  stop("R/setup.R must be loaded with source()")
+}
+
+REPO_ROOT <- normalizePath(file.path(dirname(sourced_file()), ".."))
 
 for (file in c("mantel.R", "ridge_cv.R", "adamant_cv.R", "simulation.R", "power_curve.R",
                "data.R", "eeg_tests.R", "liver_cv.R", "plots.R")) {

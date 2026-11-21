@@ -9,9 +9,10 @@
 #          the degenerate moment-matched fits (huge shape and rate).
 # Inputs:  None (Rscript must be on the PATH; the cases are generated here
 #          and go to R and back as binary doubles).
-# Outputs: A table of cases, mismatches and branch counts on standard
-#          output; exit status 1 if any double differs.
-# Usage:   nix develop -c python python/tests/test_rmath.py
+#          Also checks values with a closed form, without running R.
+# Outputs: None (with `-s` pytest shows the table of cases, mismatches and
+#          branch counts).
+# Usage:   nix develop -c python -m pytest python/tests/test_rmath.py
 # -----------------------------------------------------------------------------
 import os
 import subprocess
@@ -22,6 +23,7 @@ import time
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 
 import numpy as np
+import pytest
 
 from adamant.rmath import BRANCHES, DBL_EPSILON, DBL_MIN, pgamma_branch, pgamma_upper
 
@@ -141,40 +143,71 @@ CASES = (
 )
 
 
-def main():
-    """Run every class of cases against R and print the comparison.
+@pytest.fixture(scope="module")
+def cases():
+    """The cases of every class, drawn in the order of CASES from one seed.
 
-    Returns: number of doubles that differ from R's.
+    Returns: dict from the name of a class to its (x, shape, rate).
     """
     rng = np.random.default_rng(20261119)
+    return {name: make(rng) for name, make in CASES}
+
+
+@pytest.mark.against_r
+@pytest.mark.parametrize("name", [name for name, _ in CASES])
+def test_every_double_equals_r(cases, name):
+    x, shape, rate = cases[name]
     pgamma_upper(1.0, 1.0, 1.0)  # compile
-    failures = 0
-    for name, make in CASES:
-        x, shape, rate = make(rng)
-        start = time.perf_counter()
-        ours = pgamma_upper(x, shape, rate)
-        seconds = time.perf_counter() - start
-        theirs = r_pgamma_upper(x, shape, rate)
-        both_nan = np.isnan(ours) & np.isnan(theirs)
-        differ = (ours.view(np.uint64) != theirs.view(np.uint64)) & ~both_nan
-        failures += int(differ.sum())
-        print(f"{name}: {x.size} cases, {int(differ.sum())} differ from R, {x.size / seconds:,.0f} calls per second")
-        branch = pgamma_branch(x, shape, rate)
-        redone = (ours < DBL_MIN / DBL_EPSILON) & (branch > 0)
-        for index, label in enumerate(BRANCHES):
-            chosen = branch == index
-            if chosen.any():
-                print(f"    {int(chosen.sum()):7d} ({int((differ & chosen).sum())} differ)  {label}")
-        print(f"    {int(redone.sum()):7d} ({int((differ & redone).sum())} differ)  of these, redone through the logarithm")
-        if differ.any():
-            with np.errstate(all="ignore"):
-                relative = np.abs(ours[differ] - theirs[differ]) / np.abs(theirs[differ])
-            print(f"    largest relative difference {np.nanmax(relative):.3g}")
-            for i in np.flatnonzero(differ)[:5]:
-                print(f"    x={x[i].hex()} shape={shape[i].hex()} rate={rate[i].hex()} ours={ours[i]!r} R={theirs[i]!r}")
-    print("PASS: every double equals R's" if failures == 0 else f"FAIL: {failures} doubles differ")
-    return failures
+    start = time.perf_counter()
+    ours = pgamma_upper(x, shape, rate)
+    seconds = time.perf_counter() - start
+    theirs = r_pgamma_upper(x, shape, rate)
+    both_nan = np.isnan(ours) & np.isnan(theirs)
+    differ = (ours.view(np.uint64) != theirs.view(np.uint64)) & ~both_nan
+    print(f"{name}: {x.size} cases, {int(differ.sum())} differ from R, {x.size / seconds:,.0f} calls per second")
+    branch = pgamma_branch(x, shape, rate)
+    redone = (ours < DBL_MIN / DBL_EPSILON) & (branch > 0)
+    for index, label in enumerate(BRANCHES):
+        chosen = branch == index
+        if chosen.any():
+            print(f"    {int(chosen.sum()):7d} ({int((differ & chosen).sum())} differ)  {label}")
+    print(f"    {int(redone.sum()):7d} ({int((differ & redone).sum())} differ)  of these, redone through the logarithm")
+    examples = [f"x={x[i].hex()} shape={shape[i].hex()} rate={rate[i].hex()} ours={ours[i]!r} R={theirs[i]!r}"
+                for i in np.flatnonzero(differ)[:5]]
+    assert not differ.any(), f"{int(differ.sum())} doubles differ from R: {examples}"
+
+
+def test_the_cases_reach_every_branch(cases):
+    reached = set()
+    for x, shape, rate in cases.values():
+        reached |= set(np.unique(pgamma_branch(x, shape, rate)).tolist())
+    assert reached == set(range(len(BRANCHES)))
+
+
+def test_pgamma_upper_has_the_closed_forms_of_small_integer_shapes():
+    # shape 1 is the exponential; integer shape k: P(Poisson(x * rate) <= k - 1)
+    x = np.array([0.0, 0.5, 1.0, 2.0, 30.0])
+    np.testing.assert_allclose(pgamma_upper(x, 1.0, 1.0), np.exp(-x), rtol=1e-14)
+    np.testing.assert_allclose(pgamma_upper(x, 1.0, 3.0), np.exp(-3 * x), rtol=1e-14)
+    np.testing.assert_allclose(pgamma_upper(3.0, 4.0, 2.0), 61 * np.exp(-6.0), rtol=1e-14)
+    np.testing.assert_allclose(pgamma_upper(2.0, 2.0, 1.0), 3 * np.exp(-2.0), rtol=1e-14)
+
+
+def test_pgamma_upper_broadcasts_and_handles_the_edges():
+    grid = pgamma_upper(np.array([[1.0], [2.0]]), np.array([1.0, 2.0, 3.0]), 1.0)
+    assert grid.shape == (2, 3)
+    assert (np.diff(grid, axis=1) > 0).all() and (np.diff(grid, axis=0) < 0).all()
+    assert pgamma_upper(0.0, 2.0, 1.0) == 1 and pgamma_upper(np.inf, 2.0, 1.0) == 0
+    assert pgamma_upper(-1.0, 2.0, 1.0) == 1
+    assert np.isnan(pgamma_upper(np.nan, 2.0, 1.0)) and np.isnan(pgamma_upper(1.0, -1.0, 1.0))
+
+
+def test_pgamma_branch_names_the_branch_of_a_call():
+    branch = pgamma_branch(np.array([-1.0, 0.5, 2.0, 2.0, 50.0]),
+                           np.array([2.0, 2.0, 10.0, 0.5, 10.0]), 1.0)
+    assert [BRANCHES[i].split(" ")[0] for i in branch] == \
+        ["outside", "pgamma_smallx", "pd_upper_series", "pd_lower_cf", "pd_lower_series"]
 
 
 if __name__ == "__main__":
-    sys.exit(1 if main() else 0)
+    sys.exit(pytest.main([__file__, "-q", "-s"]))
